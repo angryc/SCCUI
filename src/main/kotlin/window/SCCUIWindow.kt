@@ -1,6 +1,6 @@
 package window
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
@@ -36,7 +36,7 @@ fun NotepadWindow(state: NotepadWindowState) {
     Window(
         state = state.window,
         title = titleOf(state),
-        resizable = false,
+        resizable = true,
         icon = LocalAppResources.current.icon,
         onCloseRequest = { exit() }
     ) {
@@ -57,7 +57,8 @@ fun NotepadWindow(state: NotepadWindowState) {
                 OutlinedTextField(
                     state.label,
                     state::label::set,
-                    modifier = Modifier.padding(28.dp)
+                    modifier = Modifier.padding(20.dp),
+                    label = { Text("Selected Key")}
                 )
 
                 mapToDropDown(state)
@@ -65,34 +66,36 @@ fun NotepadWindow(state: NotepadWindowState) {
                 Button(
                     modifier = Modifier.padding(28.dp),
                     onClick = {
-                        state.rows[state.row][state.column].name = state.label
+                        state.rows[state.row][state.column].label = state.label
                         state.rows[state.row][state.column].mapTo = state.mapTo
                         updateRemapblock(state)
                     }
-                ) { Text("SAVE") }
+                ) { Text("APPLY") }
 
             }
 
             // Output Text Field
             BasicTextField(
-                state.remapblock,
-                state::remapblock::set,
+                state.output,
+                state::output::set,
                 modifier = Modifier
-                    //.fillMaxSize()
+                    .height(150.dp)
+                    .requiredWidth(500.dp)
+                    .border(BorderStroke(2.dp, Color.LightGray))
                     .padding(20.dp)
+                    //.scrollable(ScrollableState { })
+                    .verticalScroll(ScrollState(1))
+                //label = { Text("Output")}
             )
 
 
             //button to flash the converter
             val resourcesDir = File(System.getProperty("compose.application.resources.dir"))
             val command = resourcesDir.toString()+"/scinfo"
-            var command_output = ""
-            println(command)
             Button(
                 modifier = Modifier.padding(20.dp),
                 onClick = {
-                    command_output = command.evalBash().getOrThrow()
-                    state.commandLine = command_output
+                    state.commandLine = command.evalBash().getOrThrow()
                 }
             ) { Text("FLASH SOARER'S CONVERTER") }
 
