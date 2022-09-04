@@ -2,7 +2,6 @@ package window
 
 import NotepadApplicationState
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Notification
@@ -15,7 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import util.AlertDialogResult
 import java.nio.file.Path
-import kotlin.reflect.KProperty
+
 
 data class Key(
     var name: String,
@@ -115,15 +114,6 @@ class NotepadWindowState(
         }
 
 
-    private var _button1 by mutableStateOf("a")
-    var button1: String
-        get() = _button1
-        set(value) {
-            check(isInit)
-            _button1 = value
-            isChanged = true
-        }
-
     private var _output by mutableStateOf("")
     var output: String
         get() = _output
@@ -132,6 +122,34 @@ class NotepadWindowState(
             _output = value
             isChanged = true
         }
+
+    private var _remapblock by mutableStateOf("")
+    var remapblock: String
+        get() = _remapblock
+        set(value) {
+            check(isInit)
+            _remapblock = value
+            isChanged = true
+        }
+
+    private var _macroblock by mutableStateOf("")
+    var macroblock: String
+        get() = _macroblock
+        set(value) {
+            check(isInit)
+            _macroblock = value
+            isChanged = true
+        }
+
+    private var _commandLine by mutableStateOf("")
+    var commandLine: String
+        get() = _commandLine
+        set(value) {
+            check(isInit)
+            _commandLine = value
+            isChanged = true
+        }
+
 
     private var _label by mutableStateOf("")
     var label: String

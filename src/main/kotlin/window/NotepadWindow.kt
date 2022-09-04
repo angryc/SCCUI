@@ -1,6 +1,5 @@
 package window
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
@@ -9,49 +8,27 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.modifier.modifierLocalOf
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.window.*
 import common.LocalAppResources
+import evalBash
 import kotlinx.coroutines.launch
 import util.FileDialog
 import util.YesNoCancelDialog
+import java.io.File
 
 
 @Composable
 fun NotepadWindow(state: NotepadWindowState) {
     val scope = rememberCoroutineScope()
 
-    // Model - Keyboard Layout (of M122 German)
-/*
-    var row1 = mutableStateListOf(Key("", 3.25, 1.0, Color.White), Key("F13", 1.0, 1.0, Color.LightGray), Key("F14", 1.0, 1.0, Color.LightGray), Key("F15", 1.0, 1.0, Color.LightGray), Key("F16", 1.0, 1.0, Color.LightGray), Key("F17", 1.0, 1.0, Color.White), Key("F18", 1.0, 1.0, Color.White), Key("F19", 1.0, 1.0, Color.White), Key("F20", 1.0, 1.0, Color.White), Key("F21", 1.0, 1.0, Color.LightGray), Key("F22", 1.0, 1.0, Color.LightGray), Key("F23", 1.0, 1.0, Color.LightGray), Key("F24", 1.0, 1.0, Color.LightGray))
-    var row2 = mutableStateListOf(Key("", 3.25, 1.0, Color.White), Key("F1", 1.0, 1.0, Color.LightGray), Key("F2", 1.0, 1.0, Color.LightGray), Key("F3", 1.0, 1.0, Color.LightGray), Key("F4", 1.0, 1.0, Color.LightGray), Key("F5", 1.0, 1.0, Color.White), Key("F6", 1.0, 1.0, Color.White), Key("F7", 1.0, 1.0, Color.White), Key("F8", 1.0, 1.0, Color.White), Key("F9", 1.0, 1.0, Color.LightGray), Key("F10", 1.0, 1.0, Color.LightGray), Key("F11", 1.0, 1.0, Color.LightGray), Key("F12", 1.0, 1.0, Color.LightGray))
-    var row3 = mutableStateListOf(Key("", 20.0, 1.0, Color.White))
-    var row4 = mutableStateListOf(Key("S-Abf", 1.0, 1.0, Color.LightGray), Key("  ", 1.0, 1.0, Color.LightGray),Key("", 0.25, 1.0, Color.White), Key("°", 1.0, 1.0, Color.White), Key("1", 1.0, 1.0, Color.White), Key("2", 1.0, 1.0, Color.White), Key("3", 1.0, 1.0, Color.White), Key("4", 1.0, 1.0, Color.White), Key("5", 1.0, 1.0, Color.White), Key("6", 1.0, 1.0, Color.White), Key("7", 1.0, 1.0, Color.White), Key("8", 1.0, 1.0, Color.White), Key("9", 1.0, 1.0, Color.White), Key("0", 1.0, 1.0, Color.White), Key("ß", 1.0, 1.0, Color.White), Key("´", 1.0, 1.0, Color.White), Key("Backspace", 2.0, 1.0, Color.LightGray), Key("", 0.25, 1.0, Color.White), Key("|<-", 1.0, 1.0, Color.LightGray), Key("Dup", 1.0, 1.0, Color.LightGray), Key("  ", 1.0, 1.0, Color.LightGray), Key("", 0.25, 1.0, Color.White), Key("  ", 1.0, 1.0, Color.LightGray), Key("  ", 1.0, 1.0, Color.LightGray), Key(".", 1.0, 1.0, Color.White), Key("  ", 1.0, 1.0, Color.LightGray))
-    var row5 = mutableStateListOf(Key("  ", 1.0, 1.0, Color.LightGray), Key("E-Lö", 1.0, 1.0, Color.LightGray),Key("", 0.25, 1.0, Color.White), Key("Tab", 1.5, 1.0, Color.LightGray), Key("Q", 1.0, 1.0, Color.White), Key("W", 1.0, 1.0, Color.White), Key("E", 1.0, 1.0, Color.White), Key("R", 1.0, 1.0, Color.White), Key("T", 1.0, 1.0, Color.White), Key("Z", 1.0, 1.0, Color.White), Key("U", 1.0, 1.0, Color.White), Key("I", 1.0, 1.0, Color.White), Key("O", 1.0, 1.0, Color.White), Key("P", 1.0, 1.0, Color.White), Key("Ü", 1.0, 1.0, Color.White), Key("+", 1.0, 1.0, Color.White), Key("", 0.25, 1.0, Color.LightGray), Key("Return", 1.25, 2.0, Color.LightGray), Key("", 0.25, 1.0, Color.White), Key("<-|", 1.0, 1.0, Color.LightGray), Key("^a", 1.0, 1.0, Color.LightGray), Key("a/", 1.0, 1.0, Color.LightGray), Key("", 0.25, 1.0, Color.White), Key("7", 1.0, 1.0, Color.White), Key("8", 1.0, 1.0, Color.White), Key("9", 1.0, 1.0, Color.White), Key("Eing", 1.0, 1.0, Color.LightGray))
-    var row6 = mutableStateListOf(Key("Druck", 1.0, 1.0, Color.LightGray), Key("Hilfe", 1.0, 1.0, Color.LightGray),Key("", 0.25, 1.0, Color.White), Key("Capslock", 1.75, 1.0, Color.LightGray), Key("A", 1.0, 1.0, Color.White), Key("S", 1.0, 1.0, Color.White), Key("D", 1.0, 1.0, Color.White), Key("F", 1.0, 1.0, Color.White), Key("G", 1.0, 1.0, Color.White), Key("H", 1.0, 1.0, Color.White), Key("J", 1.0, 1.0, Color.White), Key("K", 1.0, 1.0, Color.White), Key("L", 1.0, 1.0, Color.White), Key("Ö", 1.0, 1.0, Color.White), Key("Ä", 1.0, 1.0, Color.White), Key("#", 1.0, 1.0, Color.White), Key("", 1.25, 0.0, Color.LightGray), Key("", 1.25, 1.0, Color.White), Key("^", 1.0, 1.0, Color.LightGray), Key("", 1.25, 1.0, Color.White), Key("4", 1.0, 1.0, Color.White), Key("5", 1.0, 1.0, Color.White), Key("6", 1.0, 1.0, Color.White), Key("  ", 1.0, 1.0, Color.LightGray))
-    var row7 = mutableStateListOf(Key("  ", 1.0, 1.0, Color.LightGray), Key("Wdgab", 1.0, 1.0, Color.LightGray),Key("", 0.25, 1.0, Color.White), Key("Shift", 1.25, 1.0, Color.LightGray), Key("<", 1.0, 1.0, Color.White), Key("Y", 1.0, 1.0, Color.White), Key("X", 1.0, 1.0, Color.White), Key("C", 1.0, 1.0, Color.White), Key("V", 1.0, 1.0, Color.White), Key("B", 1.0, 1.0, Color.White), Key("N", 1.0, 1.0, Color.White), Key("M", 1.0, 1.0, Color.White), Key(",", 1.0, 1.0, Color.White), Key(".", 1.0, 1.0, Color.White), Key("-", 1.0, 1.0, Color.White), Key("Shift", 2.75, 1.0, Color.LightGray), Key("", 0.25, 1.0, Color.White), Key("<", 1.0, 1.0, Color.LightGray), Key("Linie", 1.0, 1.0, Color.LightGray), Key(">", 1.0, 1.0, Color.LightGray), Key("", 0.25, 1.0, Color.White), Key("1", 1.0, 1.0, Color.White), Key("2", 1.0, 1.0, Color.White), Key("3", 1.0, 1.0, Color.White), Key("Eing", 1.0, 2.0, Color.LightGray))
-    var row8 = mutableStateListOf(Key("Defin", 1.0, 1.0, Color.LightGray), Key("Aufz", 1.0, 1.0, Color.LightGray),Key("", 0.25, 1.0, Color.White), Key("Grdst", 1.5, 1.0, Color.LightGray), Key("", 1.0, 1.0, Color.White), Key("Alt", 1.5, 1.0, Color.LightGray), Key("Leertaste", 7.0, 1.0, Color.White), Key("Alt", 1.5, 1.0, Color.LightGray), Key("", 1.0, 1.0, Color.White), Key("Daten Freigabe", 1.5, 1.0, Color.LightGray), Key("", 1.25, 1.0, Color.White), Key("v", 1.0, 1.0, Color.LightGray), Key("", 1.25, 1.0, Color.White), Key("0", 2.0, 1.0, Color.White), Key(",", 1.0, 1.0, Color.White))
-    val rows = mutableStateListOf(row1, row2, row3, row4, row5, row6, row7, row8)
-    val defaultWidth = 40.dp
-    val defaultHeight = 40.dp
-*/
-
-    //View
-
-    //Variables
-    var t = 1
-    var c = 1
-   // var text by remember { mutableStateOf("") }
 
 
     fun exit() = scope.launch { state.exit() }
@@ -70,95 +47,60 @@ fun NotepadWindow(state: NotepadWindowState) {
 
         Column {
 
-            Box(modifier = Modifier
-                .absolutePadding(left = state.defaultWidth)
-                //.border(2.dp, Color.LightGray, RectangleShape)
+            keyboard(state)
+
+            //UI elements for remapping
+            Row (modifier = Modifier
+                .padding(20.dp)
+
             ) {
-                state.rows.forEach {
-                    Row(
-                        modifier = Modifier.absolutePadding(top = state.defaultHeight.times(t))//.paddingFromBaseline(top = defaultHeight.times(t))
-                    ) {
-                        t++
-                        it.forEach {
-                            it.row = t-2
-                            it.column = c-1
+                OutlinedTextField(
+                    state.label,
+                    state::label::set,
+                    modifier = Modifier.padding(28.dp)
+                )
 
-                            c++
-                            if (it.label != "") {
-                                OutlinedButton(
-                                    onClick = {
-                                        state.label = if (it.label != "  ") { it.label } else { it.name }
-                                        //text = it.name + it.row + it.column + it.mapTo
-                                        state.mapTo = it.mapTo.toString()
-                                        state.row = it.row!!
-                                        state.column = it.column!!
-                                        if (state.rows[state.row][state.column].mapTo != null) {
-                                            state.mapToDescription = state.mappingKeys[state.mappingKeys.indexOfFirst { it.name == state.rows[state.row][state.column].mapTo!! }].description
-                                        } else { state.mapToDescription = "" }
+                mapToDropDown(state)
 
-                                    },
-                                    colors = ButtonDefaults.buttonColors(backgroundColor = it.backgroundColor),
-                                    contentPadding = PaddingValues(0.dp),
-                                    modifier = Modifier.size(
-                                        width = state.defaultWidth.times(it.width.toFloat()),
-                                        height = state.defaultHeight.times(it.height.toFloat())
-                                    ).padding(all = 0.dp)
-                                ) {
-                                    Text(
-                                        text = if (it.label != "  ") { it.label } else { it.name },
-                                        fontSize = if (it.label != "  ") { 9.sp } else { 7.sp },
-                                        modifier = Modifier.padding(vertical = 0.dp),
-                                        color = if (it.label != "  ") { Color.Black } else { Color.Gray },
-
-                                    )
-
-                                }
-                            } else {
-                                Spacer(
-                                    Modifier.size(
-                                        width = state.defaultWidth.times(it.width.toFloat()),
-                                        height = state.defaultHeight.times(it.height.toFloat())
-                                    )
-                                )
-                            }
-                        }
+                Button(
+                    modifier = Modifier.padding(28.dp),
+                    onClick = {
+                        state.rows[state.row][state.column].name = state.label
+                        state.rows[state.row][state.column].mapTo = state.mapTo
+                        updateRemapblock(state)
                     }
-                    c = 1
-                }
-                t = 1
+                ) { Text("SAVE") }
+
             }
 
-
-
-            val currentTimezoneStrings = remember { SnapshotStateList<String>() }
-
-        Row (modifier = Modifier
-            .padding(20.dp)
-
-        ) {
-            OutlinedTextField(
-                state.label,
-                state::label::set,
-                modifier = Modifier.padding(28.dp)
+            // Output Text Field
+            BasicTextField(
+                state.remapblock,
+                state::remapblock::set,
+                modifier = Modifier
+                    //.fillMaxSize()
+                    .padding(20.dp)
             )
 
-            mapToDropDown(state)
 
+            //button to flash the converter
+            val resourcesDir = File(System.getProperty("compose.application.resources.dir"))
+            val command = resourcesDir.toString()+"/scinfo"
+            var command_output = ""
+            println(command)
             Button(
-                modifier = Modifier.padding(28.dp),
+                modifier = Modifier.padding(20.dp),
                 onClick = {
-                    state.rows[state.row][state.column].name = state.label
-                    state.rows[state.row][state.column].mapTo = state.mapTo
+                    command_output = command.evalBash().getOrThrow()
+                    state.commandLine = command_output
                 }
-            ) { Text("SAVE") }
+            ) { Text("FLASH SOARER'S CONVERTER") }
 
-        }
-            // TextField isn't efficient for big text files, we use it for simplicity
             BasicTextField(
-                state.output,
-                state::output::set,
+                state.commandLine,
+                state::commandLine::set,
                 modifier = Modifier
-                    .fillMaxSize()
+                    //.fillMaxSize()
                     .padding(20.dp)
             )
 
@@ -191,15 +133,99 @@ fun NotepadWindow(state: NotepadWindowState) {
     }
 }
 
+@Composable
+private fun keyboard(state: NotepadWindowState) {
+
+    //Variables
+    var t = 1
+    var c = 1
+
+    Box(
+        modifier = Modifier
+            .absolutePadding(left = state.defaultWidth)
+        //.border(2.dp, Color.LightGray, RectangleShape)
+    ) {
+        state.rows.forEach {
+            Row(
+                modifier = Modifier.absolutePadding(top = state.defaultHeight.times(t))//.paddingFromBaseline(top = defaultHeight.times(t))
+            ) {
+                t++
+                it.forEach {
+                    it.row = t - 2
+                    it.column = c - 1
+
+                    c++
+                    if (it.label != "") {
+                        OutlinedButton(
+                            onClick = {
+                                state.label = if (it.label != "  ") {
+                                    it.label
+                                } else {
+                                    it.name
+                                }
+                                //text = it.name + it.row + it.column + it.mapTo
+                                state.mapTo = it.mapTo.toString()
+                                state.row = it.row!!
+                                state.column = it.column!!
+                                if (state.rows[state.row][state.column].mapTo != null) {
+                                    state.mapToDescription =
+                                        state.mappingKeys[state.mappingKeys.indexOfFirst { it.name == state.rows[state.row][state.column].mapTo!! }].description
+                                } else {
+                                    state.mapToDescription = ""
+                                }
+
+                            },
+                            colors = ButtonDefaults.buttonColors(backgroundColor = it.backgroundColor),
+                            contentPadding = PaddingValues(0.dp),
+                            modifier = Modifier.size(
+                                width = state.defaultWidth.times(it.width.toFloat()),
+                                height = state.defaultHeight.times(it.height.toFloat())
+                            ).padding(all = 0.dp)
+                        ) {
+                            Text(
+                                text = if (it.label != "  ") {
+                                    it.label
+                                } else {
+                                    it.name
+                                },
+                                fontSize = if (it.label != "  ") {
+                                    9.sp
+                                } else {
+                                    7.sp
+                                },
+                                modifier = Modifier.padding(vertical = 0.dp),
+                                color = if (it.label != "  ") {
+                                    Color.Black
+                                } else {
+                                    Color.Gray
+                                },
+
+                                )
+
+                        }
+                    } else {
+                        Spacer(
+                            Modifier.size(
+                                width = state.defaultWidth.times(it.width.toFloat()),
+                                height = state.defaultHeight.times(it.height.toFloat())
+                            )
+                        )
+                    }
+                }
+            }
+            c = 1
+        }
+        t = 1
+    }
+}
 
 
 @Composable
-fun mapToDropDown(state: NotepadWindowState){
+private fun mapToDropDown(state: NotepadWindowState){
 
     // Declaring a boolean value to store
     // the expanded state of the Text Field
     var mExpanded by remember { mutableStateOf(false) }
-
     var mTextFieldSize by remember { mutableStateOf(Size.Zero)}
 
     // Up Icon when expanded and down icon when collapsed
@@ -240,7 +266,6 @@ fun mapToDropDown(state: NotepadWindowState){
                 DropdownMenuItem(onClick = {
                     state.mapToDescription = it.description
                     state.mapTo = it.name
-                    state.output = " " + state.rows[state.row][state.column].name + " " + it.name
                     mExpanded = false
                 }) {
                     Text(
@@ -250,6 +275,25 @@ fun mapToDropDown(state: NotepadWindowState){
             }
         }
     }
+}
+
+private fun updateRemapblock(state: NotepadWindowState) {
+    var r = 1
+    state.remapblock = "remapblock \r\n"
+    state.rows.forEach() {
+        r++
+        state.rows[r-2].forEach() {
+            if (it.mapTo != null) {
+                state.remapblock += "  " + it.name + " " + it.mapTo + "\r\n"
+            }
+        }
+    }
+    state.remapblock += "endblock"
+    updateOutput(state)
+}
+
+private fun updateOutput(state: NotepadWindowState) {
+    state.output = state.remapblock + "\r\n" + state.macroblock
 }
 
 private fun titleOf(state: NotepadWindowState): String {
