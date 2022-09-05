@@ -147,9 +147,9 @@ private fun writeTempFile(state: SCCUIWindowState) = runBlocking {
     val command_scwr_win = resourcesDir+"\\scwr "+resourcesDir+"\\temp.bin"
     val command_scas = resourcesDir+"/scas "+resourcesDir+"/temp.txt "+resourcesDir+"/temp.bin"
     val command_scwr = resourcesDir+"/scwr "+resourcesDir+"/temp.bin"
-    state.saveTemp(resourcesDir.toString())
+    state.saveTemp(resourcesDir)
     Thread.sleep(1000)
-    if (System.getProperty("os.name").toLowerCase().contains("win")) {
+    if (System.getProperty("os.name").lowercase().contains("win")) {
         state.commandLine = Runtime.getRuntime().exec(command_scas_win).toString()
         Thread.sleep(1000)
         state.commandLine = Runtime.getRuntime().exec(command_scwr_win).toString()
