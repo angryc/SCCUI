@@ -143,17 +143,24 @@ fun SCCUIWindow(state: SCCUIWindowState) {
 
 private fun writeTempFile(state: SCCUIWindowState) = runBlocking {
     val resourcesDir = File(System.getProperty("compose.application.resources.dir")).toString()
+    val command_scas_win = resourcesDir+"\\scas "+resourcesDir+"\\temp.txt "+resourcesDir+"\\temp.bin"
+    val command_scwr_win = resourcesDir+"\\scwr "+resourcesDir+"\\temp.bin"
     val command_scas = resourcesDir+"/scas "+resourcesDir+"/temp.txt "+resourcesDir+"/temp.bin"
     val command_scwr = resourcesDir+"/scwr "+resourcesDir+"/temp.bin"
     state.saveTemp(resourcesDir.toString())
     Thread.sleep(1000)
-    //println(command_scas)
-    state.commandLine = command_scas.evalBash().getOrThrow()
-    println(state.commandLine)
-    Thread.sleep(1000)
-    //state.commandLine = command_scwr.evalBash().getOrThrow()
-}
+    if (System.getProperty("os.name").toLowerCase().contains("win")) {
+        state.commandLine = Runtime.getRuntime().exec(command_scas_win).toString()
+        Thread.sleep(1000)
+        state.commandLine = Runtime.getRuntime().exec(command_scwr_win).toString()
+    } else {
+        state.commandLine = command_scas.evalBash().getOrThrow()
+        Thread.sleep(1000)
+        state.commandLine = command_scwr.evalBash().getOrThrow()
+    }
 
+
+}
 
 @Composable
 private fun keyboard(state: SCCUIWindowState) {
