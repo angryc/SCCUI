@@ -4,25 +4,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.window.Notification
 import androidx.compose.ui.window.TrayState
 import common.Settings
-import window.NotepadWindowState
+import window.SCCUIWindowState
 
 @Composable
 fun rememberApplicationState() = remember {
-    NotepadApplicationState().apply {
+    SCCUIApplicationState().apply {
         newWindow()
     }
 }
 
-class NotepadApplicationState {
+class SCCUIApplicationState {
     val settings = Settings()
     val tray = TrayState()
 
-    private val _windows = mutableStateListOf<NotepadWindowState>()
-    val windows: List<NotepadWindowState> get() = _windows
+    private val _windows = mutableStateListOf<SCCUIWindowState>()
+    val windows: List<SCCUIWindowState> get() = _windows
 
     fun newWindow() {
         _windows.add(
-            NotepadWindowState(
+            SCCUIWindowState(
                 application = this,
                 path = null,
                 exit = _windows::remove

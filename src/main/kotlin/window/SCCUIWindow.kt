@@ -20,13 +20,14 @@ import androidx.compose.ui.window.*
 import common.LocalAppResources
 import evalBash
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import util.FileDialog
 import util.YesNoCancelDialog
 import java.io.File
 
 
 @Composable
-fun NotepadWindow(state: NotepadWindowState) {
+fun SCCUIWindow(state: SCCUIWindowState) {
     val scope = rememberCoroutineScope()
 
 
@@ -90,12 +91,11 @@ fun NotepadWindow(state: NotepadWindowState) {
 
 
             //button to flash the converter
-            val resourcesDir = File(System.getProperty("compose.application.resources.dir"))
-            val command = resourcesDir.toString()+"/scinfo"
+
             Button(
                 modifier = Modifier.padding(20.dp),
                 onClick = {
-                    state.commandLine = command.evalBash().getOrThrow()
+                    writeTempFile(state)
                 }
             ) { Text("FLASH SOARER'S CONVERTER") }
 
@@ -104,7 +104,12 @@ fun NotepadWindow(state: NotepadWindowState) {
                 state::commandLine::set,
                 modifier = Modifier
                     //.fillMaxSize()
+                    .height(150.dp)
+                    .requiredWidth(500.dp)
+                    .border(BorderStroke(2.dp, Color.LightGray))
                     .padding(20.dp)
+                    //.scrollable(ScrollableState { })
+                    .verticalScroll(ScrollState(1))
             )
 
             if (state.openDialog.isAwaiting) {
@@ -136,8 +141,22 @@ fun NotepadWindow(state: NotepadWindowState) {
     }
 }
 
+private fun writeTempFile(state: SCCUIWindowState) = runBlocking {
+    val resourcesDir = File(System.getProperty("compose.application.resources.dir")).toString()
+    val command_scas = resourcesDir+"/scas "+resourcesDir+"/temp.txt "+resourcesDir+"/temp.bin"
+    val command_scwr = resourcesDir+"/scwr "+resourcesDir+"/temp.bin"
+    state.saveTemp(resourcesDir.toString())
+    Thread.sleep(1000)
+    //println(command_scas)
+    state.commandLine = command_scas.evalBash().getOrThrow()
+    println(state.commandLine)
+    Thread.sleep(1000)
+    //state.commandLine = command_scwr.evalBash().getOrThrow()
+}
+
+
 @Composable
-private fun keyboard(state: NotepadWindowState) {
+private fun keyboard(state: SCCUIWindowState) {
 
     //Variables
     var t = 1
@@ -224,7 +243,7 @@ private fun keyboard(state: NotepadWindowState) {
 
 
 @Composable
-private fun mapToDropDown(state: NotepadWindowState){
+private fun mapToDropDown(state: SCCUIWindowState){
 
     // Declaring a boolean value to store
     // the expanded state of the Text Field
@@ -280,13 +299,13 @@ private fun mapToDropDown(state: NotepadWindowState){
     }
 }
 
-private fun updateRemapblock(state: NotepadWindowState) {
+private fun updateRemapblock(state: SCCUIWindowState) {
     var r = 1
     state.remapblock = "remapblock \r\n"
     state.rows.forEach() {
         r++
         state.rows[r-2].forEach() {
-            if (it.mapTo != null) {
+            if (it.mapTo != null && it.mapTo != "null") {
                 state.remapblock += "  " + it.name + " " + it.mapTo + "\r\n"
             }
         }
@@ -295,18 +314,18 @@ private fun updateRemapblock(state: NotepadWindowState) {
     updateOutput(state)
 }
 
-private fun updateOutput(state: NotepadWindowState) {
+private fun updateOutput(state: SCCUIWindowState) {
     state.output = state.remapblock + "\r\n" + state.macroblock
 }
 
-private fun titleOf(state: NotepadWindowState): String {
+private fun titleOf(state: SCCUIWindowState): String {
     val changeMark = if (state.isChanged) "*" else ""
     val filePath = state.path ?: "Untitled"
     return "$changeMark$filePath - Soarer's Converter Config UI"
 }
 
 @Composable
-private fun WindowNotifications(state: NotepadWindowState) {
+private fun WindowNotifications(state: SCCUIWindowState) {
     // Usually we take into account something like LocalLocale.current here
     fun NotepadWindowNotification.format() = when (this) {
         is NotepadWindowNotification.SaveSuccess -> Notification(
@@ -325,7 +344,7 @@ private fun WindowNotifications(state: NotepadWindowState) {
 }
 
 @Composable
-private fun FrameWindowScope.WindowMenuBar(state: NotepadWindowState) = MenuBar {
+private fun FrameWindowScope.WindowMenuBar(state: SCCUIWindowState) = MenuBar {
     val scope = rememberCoroutineScope()
 
     fun save() = scope.launch { state.save() }

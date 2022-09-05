@@ -6,23 +6,23 @@ import androidx.compose.ui.window.MenuScope
 import androidx.compose.ui.window.Tray
 import common.LocalAppResources
 import kotlinx.coroutines.launch
-import window.NotepadWindow
+import window.SCCUIWindow
 
 @Composable
-fun ApplicationScope.NotepadApplication(state: NotepadApplicationState) {
+fun ApplicationScope.SCCUIApplication(state: SCCUIApplicationState) {
     if (state.settings.isTrayEnabled && state.windows.isNotEmpty()) {
         ApplicationTray(state)
     }
 
     for (window in state.windows) {
         key(window) {
-            NotepadWindow(window)
+            SCCUIWindow(window)
         }
     }
 }
 
 @Composable
-private fun ApplicationScope.ApplicationTray(state: NotepadApplicationState) {
+private fun ApplicationScope.ApplicationTray(state: SCCUIApplicationState) {
     Tray(
         LocalAppResources.current.icon,
         state = state.tray,
@@ -32,7 +32,7 @@ private fun ApplicationScope.ApplicationTray(state: NotepadApplicationState) {
 }
 
 @Composable
-private fun MenuScope.ApplicationMenu(state: NotepadApplicationState) {
+private fun MenuScope.ApplicationMenu(state: SCCUIApplicationState) {
     val scope = rememberCoroutineScope()
     fun exit() = scope.launch { state.exit() }
 

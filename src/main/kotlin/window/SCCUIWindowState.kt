@@ -1,6 +1,6 @@
 package window
 
-import NotepadApplicationState
+import SCCUIApplicationState
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import util.AlertDialogResult
 import java.nio.file.Path
+import java.nio.file.Paths
 
 
 data class Key(
@@ -38,10 +39,10 @@ data class MappingKey(
 
 
 
-class NotepadWindowState(
-    private val application: NotepadApplicationState,
+class SCCUIWindowState(
+    private val application: SCCUIApplicationState,
     path: Path?,
-    private val exit: (NotepadWindowState) -> Unit
+    private val exit: (SCCUIWindowState) -> Unit
 ) {
 
 
@@ -226,6 +227,7 @@ class NotepadWindowState(
         return false
     }
 
+
     private var saveJob: Job? = null
 
     private suspend fun save(path: Path) {
@@ -243,6 +245,11 @@ class NotepadWindowState(
             e.printStackTrace()
             _notifications.trySend(NotepadWindowNotification.SaveError(path))
         }
+    }
+
+
+    suspend fun saveTemp(path: String) {
+        Paths.get(path+"/temp.txt").writeTextAsync(output)
     }
 
     suspend fun exit(): Boolean {
