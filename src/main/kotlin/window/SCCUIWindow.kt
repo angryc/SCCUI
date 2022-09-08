@@ -158,9 +158,8 @@ private fun writeTempFile(state: SCCUIWindowState) = runBlocking {
         Thread.sleep(1000)
         state.commandLine = command_scwr.evalBash().getOrThrow()
     }
-
-
 }
+
 
 @Composable
 private fun keyboard(state: SCCUIWindowState) {
@@ -357,10 +356,12 @@ private fun FrameWindowScope.WindowMenuBar(state: SCCUIWindowState) = MenuBar {
     fun save() = scope.launch { state.save() }
     fun open() = scope.launch { state.open() }
     fun exit() = scope.launch { state.exit() }
+    fun read() = scope.launch { state.read() }
 
     Menu("File") {
         Item("New window", onClick = state::newWindow)
-        Item("Open...", onClick = { open() })
+        Item("Open File...", onClick = { open() })
+        Item("Read config from converter", onClick = { read() })
         Item("Save", onClick = { save() }, enabled = state.isChanged || state.path == null)
         Separator()
         Item("Exit", onClick = { exit() })

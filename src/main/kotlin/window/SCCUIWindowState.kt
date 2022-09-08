@@ -2,19 +2,24 @@ package window
 
 import SCCUIApplicationState
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Notification
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowState
 import common.Settings
+import evalBash
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import util.AlertDialogResult
+import java.io.File
+import java.nio.charset.Charset
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.io.path.readLines
 
 
 data class Key(
@@ -75,11 +80,13 @@ class SCCUIWindowState(
     var row7 = mutableStateListOf(Key("EXTRA_F7", "  ", 1.0, 1.0, Color.LightGray), Key("EXTRA_F8", "Wdgab", 1.0, 1.0, Color.LightGray),Key("", "", 0.25, 1.0, Color.White), Key("LSHIFT", "Shift", 1.25, 1.0, Color.LightGray), Key("EUROPE_2", "<", 1.0, 1.0, Color.White), Key("Z", "Y", 1.0, 1.0, Color.White), Key("X", "X", 1.0, 1.0, Color.White), Key("C", "C", 1.0, 1.0, Color.White), Key("V", "V", 1.0, 1.0, Color.White), Key("B", "B", 1.0, 1.0, Color.White), Key("N", "N", 1.0, 1.0, Color.White), Key("M", "M", 1.0, 1.0, Color.White), Key("COMMA", ",", 1.0, 1.0, Color.White), Key("PERIOD", ".", 1.0, 1.0, Color.White), Key("SLASH", "-", 1.0, 1.0, Color.White), Key("RSHIFT", "Shift", 2.75, 1.0, Color.LightGray), Key("", "", 0.25, 1.0, Color.White), Key("LEFT", "<", 1.0, 1.0, Color.LightGray), Key("LANG_4", "Linie", 1.0, 1.0, Color.LightGray), Key("RIGHT", ">", 1.0, 1.0, Color.LightGray), Key("", "", 0.25, 1.0, Color.White), Key("PAD_1", "1", 1.0, 1.0, Color.White), Key("PAD_2", "2", 1.0, 1.0, Color.White), Key("PAD_3", "3", 1.0, 1.0, Color.White), Key("PAD_PLUS", "Eing", 1.0, 2.0, Color.LightGray))
     var row8 = mutableStateListOf(Key("EXTRA_F9", "Defin", 1.0, 1.0, Color.LightGray), Key("EXTRA_F10", "Aufz", 1.0, 1.0, Color.LightGray),Key("", "", 0.25, 1.0, Color.White), Key("LCTRL", "Grdst", 1.5, 1.0, Color.LightGray), Key("", "", 1.0, 1.0, Color.White), Key("LALT", "Alt", 1.5, 1.0, Color.LightGray), Key("SPACE", "  ", 7.0, 1.0, Color.White), Key("RALT", "Alt", 1.5, 1.0, Color.LightGray), Key("", "", 1.0, 1.0, Color.White), Key("RCTRL", "Daten Freigabe", 1.5, 1.0, Color.LightGray), Key("", "", 1.25, 1.0, Color.White), Key("DOWN", "v", 1.0, 1.0, Color.LightGray), Key("", "", 1.25, 1.0, Color.White), Key("PAD_0", "0", 2.0, 1.0, Color.White), Key("PAD_PERIOD", ",", 1.0, 1.0, Color.White))
 
+    private lateinit var _input: List<String>
+
     val rows = mutableStateListOf(row1, row2, row3, row4, row5, row6, row7, row8)
     val defaultWidth = 40.dp
     val defaultHeight = 40.dp
 
-    var _mapToDescription by mutableStateOf("")
+    private var _mapToDescription by mutableStateOf("")
     var mapToDescription: String
         get() = _mapToDescription
         set(value) {
@@ -185,11 +192,36 @@ class SCCUIWindowState(
         isChanged = false
         this.path = path
         try {
-            _output = path.readTextAsync()
+            _input = path.readLines(Charset.defaultCharset())
             isInit = true
+            output = _input.toString().replace(",", "\n\r").replace("[", "").replace("]", "") //TODO: make nicer
+            processRemapblocks()
         } catch (e: Exception) {
             e.printStackTrace()
             output = "Cannot read $path"
+        }
+    }
+
+    private fun processRemapblocks() {
+        var foundBlock = false
+        _input.forEach() {
+            if (it.contains("endblock", ignoreCase = true)) {
+                foundBlock = false
+            } else if (foundBlock) {
+                var s = it.trim().split(" ")
+                var r = 0
+                rows.forEach() {
+                    r++
+                    rows[r-1].forEach() {
+                        if (s[0] == it.name) {
+                            it.mapTo = s[1]
+                        }
+                    }
+                }
+            }
+            else if (it.contains("remapblock", ignoreCase = true)) {
+                foundBlock = true
+            }
         }
     }
 
@@ -250,6 +282,30 @@ class SCCUIWindowState(
 
     suspend fun saveTemp(path: String) {
         Paths.get(path+"/temp.txt").writeTextAsync(output)
+    }
+
+    suspend fun read() {
+        val resourcesDir = File(System.getProperty("compose.application.resources.dir")).toString()
+        var filePath = ""
+        val command_scdis_win = resourcesDir+"\\scdis "+resourcesDir+"\\temp.bin "+resourcesDir+"\\temp.txt"
+        val command_scrd_win = resourcesDir+"\\scrd "+resourcesDir+"\\temp.bin"
+        val command_scdis = resourcesDir+"/scdis "+resourcesDir+"/temp.bin "+resourcesDir+"/temp.txt"
+        val command_scrd = resourcesDir+"/scrd "+resourcesDir+"/temp.bin"
+
+        if (System.getProperty("os.name").lowercase().contains("win")) {
+            commandLine = Runtime.getRuntime().exec(command_scrd_win).toString()
+            Thread.sleep(1000)
+            commandLine = Runtime.getRuntime().exec(command_scdis_win).toString()
+            filePath = resourcesDir + "\\temp.txt"
+        } else {
+            commandLine = command_scrd.evalBash().getOrThrow()
+            Thread.sleep(1000)
+            commandLine = command_scdis.evalBash().getOrThrow()
+            filePath = resourcesDir + "/temp.txt"
+        }
+        //println(filePath)
+        open(Paths.get(filePath))
+
     }
 
     suspend fun exit(): Boolean {
