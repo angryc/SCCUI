@@ -9,9 +9,11 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.modifier.modifierLocalOf
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -19,8 +21,10 @@ import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.window.*
 import common.LocalAppResources
 import evalBash
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import util.AlertDialogResult
 import util.FileDialog
 import util.YesNoCancelDialog
 import java.io.File
@@ -47,6 +51,13 @@ fun SCCUIWindow(state: SCCUIWindowState) {
         WindowMenuBar(state)
 
         Column {
+            Row {
+                for (i in 0..8) {
+                    layerButton(state, i)
+                }
+            }
+
+
 
             keyboard(state)
 
@@ -64,21 +75,15 @@ fun SCCUIWindow(state: SCCUIWindowState) {
 
                 mapToDropDown(state)
 
-                Button(
-                    modifier = Modifier.padding(28.dp),
-                    onClick = {
-                        state.rows[state.row][state.column].label = state.label
-                        state.rows[state.row][state.column].mapTo = state.mapTo
-                        updateRemapblock(state)
-                    }
-                ) { Text("APPLY") }
+                applyButton(state)
+
 
             }
 
             // Output Text Field
             BasicTextField(
-                state.output,
-                state::output::set,
+                value = state.remapblock[state.layer],
+                onValueChange = { state.remapblock[state.layer] = it },
                 modifier = Modifier
                     .height(150.dp)
                     .requiredWidth(500.dp)
@@ -95,22 +100,10 @@ fun SCCUIWindow(state: SCCUIWindowState) {
             Button(
                 modifier = Modifier.padding(20.dp),
                 onClick = {
-                    writeTempFile(state)
+                    writeTempFile(state, scope)
                 }
             ) { Text("FLASH SOARER'S CONVERTER") }
 
-            BasicTextField(
-                state.commandLine,
-                state::commandLine::set,
-                modifier = Modifier
-                    //.fillMaxSize()
-                    .height(150.dp)
-                    .requiredWidth(500.dp)
-                    .border(BorderStroke(2.dp, Color.LightGray))
-                    .padding(20.dp)
-                    //.scrollable(ScrollableState { })
-                    .verticalScroll(ScrollState(1))
-            )
 
             if (state.openDialog.isAwaiting) {
                 FileDialog(
@@ -137,29 +130,67 @@ fun SCCUIWindow(state: SCCUIWindowState) {
                     onResult = { state.exitDialog.onResult(it) }
                 )
             }
+            if (state.flashDialog.isAwaiting) {
+                YesNoCancelDialog(
+                    title = "Soarer's Converter Config UI",
+                    message = "Flash?",
+                    onResult = { state.flashDialog.onResult(it) }
+                )
+            }
         }
     }
 }
 
-private fun writeTempFile(state: SCCUIWindowState) = runBlocking {
+
+private fun writeTempFile(state: SCCUIWindowState, scope: CoroutineScope) = runBlocking {
     val resourcesDir = File(System.getProperty("compose.application.resources.dir")).toString()
-    val command_scas_win = resourcesDir+"\\scas "+resourcesDir+"\\temp.txt "+resourcesDir+"\\temp.bin"
-    val command_scwr_win = resourcesDir+"\\scwr "+resourcesDir+"\\temp.bin"
-    val command_scas = resourcesDir+"/scas "+resourcesDir+"/temp.txt "+resourcesDir+"/temp.bin"
-    val command_scwr = resourcesDir+"/scwr "+resourcesDir+"/temp.bin"
+    val command_scas_win = resourcesDir + "\\scas " + resourcesDir + "\\temp.txt " + resourcesDir + "\\temp.bin"
+    val command_scwr_win = resourcesDir + "\\scwr " + resourcesDir + "\\temp.bin"
+    val command_scas = resourcesDir + "/scas " + resourcesDir + "/temp.txt " + resourcesDir + "/temp.bin"
+    val command_scwr = resourcesDir + "/scwr " + resourcesDir + "/temp.bin"
+
     state.saveTemp(resourcesDir)
     Thread.sleep(1000)
     if (System.getProperty("os.name").lowercase().contains("win")) {
         state.commandLine = Runtime.getRuntime().exec(command_scas_win).toString()
-        Thread.sleep(1000)
-        state.commandLine = Runtime.getRuntime().exec(command_scwr_win).toString()
+        scope.launch {
+            if (state.askToFlash()) {
+                state.commandLine = Runtime.getRuntime().exec(command_scwr_win).toString()
+            }
+        }
+
     } else {
-        state.commandLine = command_scas.evalBash().getOrThrow()
-        Thread.sleep(1000)
-        state.commandLine = command_scwr.evalBash().getOrThrow()
+        state.commandLine = Runtime.getRuntime().exec(command_scas).toString()
+        scope.launch {
+            if (state.askToFlash()) {
+                state.commandLine = command_scwr.evalBash().getOrThrow()
+            }
+
+        }
     }
 }
 
+@Composable
+private fun layerButton (state: SCCUIWindowState, layer: Int) {
+    Button(
+        onClick = {
+            for (i in 0..8) {
+                if (i != layer) {
+                    state.buttonColor[i] = Color.DarkGray
+                } else {
+                    state.buttonColor[i] = Color.Green
+                }
+
+            }
+            state.layer = layer
+            state.updateRemapblock()
+        },
+        colors = ButtonDefaults.buttonColors(state.buttonColor[layer])
+
+    ) { Text("Layer "+layer) }
+
+
+}
 
 @Composable
 private fun keyboard(state: SCCUIWindowState) {
@@ -186,21 +217,25 @@ private fun keyboard(state: SCCUIWindowState) {
                     if (it.label != "") {
                         OutlinedButton(
                             onClick = {
+                                //set row and column number of each key
+                                state.row = it.row!!
+                                state.column = it.column!!
+                                //update label if it was changed in th UI
                                 state.label = if (it.label != "  ") {
                                     it.label
                                 } else {
                                     it.name
                                 }
-                                //text = it.name + it.row + it.column + it.mapTo
-                                state.mapTo = it.mapTo.toString()
-                                state.row = it.row!!
-                                state.column = it.column!!
-                                if (state.rows[state.row][state.column].mapTo != null) {
-                                    state.mapToDescription =
-                                        state.mappingKeys[state.mappingKeys.indexOfFirst { it.name == state.rows[state.row][state.column].mapTo!! }].description
+                                if (it.mapTo[state.layer] != null) {
+                                    //get already mapped keys and update description/label of keys
+                                    state.mapTo = it.mapTo[state.layer]!!
+                                    state.mapToDescription = state.mappingKeys[state.mappingKeys.indexOfFirst { it.name == state.rows[state.row][state.column].mapTo[state.layer] }].description
                                 } else {
                                     state.mapToDescription = ""
                                 }
+
+
+
 
                             },
                             colors = ButtonDefaults.buttonColors(backgroundColor = it.backgroundColor),
@@ -305,24 +340,21 @@ private fun mapToDropDown(state: SCCUIWindowState){
     }
 }
 
-private fun updateRemapblock(state: SCCUIWindowState) {
-    var r = 1
-    state.remapblock = "remapblock \r\n"
-    state.rows.forEach() {
-        r++
-        state.rows[r-2].forEach() {
-            if (it.mapTo != null && it.mapTo != "null") {
-                state.remapblock += "  " + it.name + " " + it.mapTo + "\r\n"
-            }
+@Composable
+private fun applyButton(state: SCCUIWindowState) {
+    Button(
+        modifier = Modifier.padding(28.dp),
+        onClick = {
+            state.rows[state.row][state.column].label = state.label
+            state.rows[state.row][state.column].mapTo[state.layer] = state.mapTo
+            state.updateRemapblock()
         }
-    }
-    state.remapblock += "endblock"
-    updateOutput(state)
+    ) { Text("APPLY") }
 }
 
-private fun updateOutput(state: SCCUIWindowState) {
-    state.output = state.remapblock + "\r\n" + state.macroblock
-}
+
+
+
 
 private fun titleOf(state: SCCUIWindowState): String {
     val changeMark = if (state.isChanged) "*" else ""
@@ -360,7 +392,7 @@ private fun FrameWindowScope.WindowMenuBar(state: SCCUIWindowState) = MenuBar {
 
     Menu("File") {
         Item("New window", onClick = state::newWindow)
-        Item("Open File...", onClick = { open() })
+        Item("Open file...", onClick = { open() })
         Item("Read config from converter", onClick = { read() })
         Item("Save", onClick = { save() }, enabled = state.isChanged || state.path == null)
         Separator()
