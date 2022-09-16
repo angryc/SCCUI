@@ -9,11 +9,8 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.modifier.modifierLocalOf
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,7 +21,6 @@ import evalBash
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import util.AlertDialogResult
 import util.FileDialog
 import util.YesNoCancelDialog
 import java.io.File
@@ -56,7 +52,14 @@ fun SCCUIWindow(state: SCCUIWindowState) {
                     layerButton(state, i)
                 }
             }
-
+            Row {
+                if (state.layer != 0) {
+                    for (i in 0..2) {
+                        layerKeyDropDown(state,i+1, i)
+                    }
+                    applyLayerKeyButton(state)
+                }
+            }
 
 
             keyboard(state)
@@ -75,15 +78,15 @@ fun SCCUIWindow(state: SCCUIWindowState) {
 
                 mapToDropDown(state)
 
-                applyButton(state)
+                applyMapToButton(state)
 
 
             }
 
             // Output Text Field
             BasicTextField(
-                value = state.remapblock[state.layer],
-                onValueChange = { state.remapblock[state.layer] = it },
+                value = state.remapblockOutput[state.layer],
+                onValueChange = { state.remapblockOutput[state.layer] = it },
                 modifier = Modifier
                     .height(150.dp)
                     .requiredWidth(500.dp)
@@ -176,16 +179,17 @@ private fun layerButton (state: SCCUIWindowState, layer: Int) {
         onClick = {
             for (i in 0..8) {
                 if (i != layer) {
-                    state.buttonColor[i] = Color.DarkGray
+                    state.layerButtonColor[i] = Color.DarkGray
                 } else {
-                    state.buttonColor[i] = Color.Green
+                    state.layerButtonColor[i] = Color.Green
                 }
 
             }
             state.layer = layer
-            state.updateRemapblock()
+            state.updateRemapblockOutput(layer)
+            state.updateLayerblockOutput()
         },
-        colors = ButtonDefaults.buttonColors(state.buttonColor[layer])
+        colors = ButtonDefaults.buttonColors(state.layerButtonColor[layer])
 
     ) { Text("Layer "+layer) }
 
@@ -234,9 +238,6 @@ private fun keyboard(state: SCCUIWindowState) {
                                     state.mapToDescription = ""
                                 }
 
-
-
-
                             },
                             colors = ButtonDefaults.buttonColors(backgroundColor = it.backgroundColor),
                             contentPadding = PaddingValues(0.dp),
@@ -247,7 +248,7 @@ private fun keyboard(state: SCCUIWindowState) {
                         ) {
                             Text(
                                 text = if (it.label != "  ") {
-                                    it.label
+                                    it.label + if (it.mapTo[state.layer] != null) { "\r\n" + "> " + it.mapTo[state.layer] } else {""}
                                 } else {
                                     it.name
                                 },
@@ -286,13 +287,9 @@ private fun keyboard(state: SCCUIWindowState) {
 @Composable
 private fun mapToDropDown(state: SCCUIWindowState){
 
-    // Declaring a boolean value to store
-    // the expanded state of the Text Field
-    var mExpanded by remember { mutableStateOf(false) }
-    var mTextFieldSize by remember { mutableStateOf(Size.Zero)}
 
     // Up Icon when expanded and down icon when collapsed
-    val icon = if (mExpanded)
+    val icon = if (state.mExpanded[0])
         Icons.Filled.KeyboardArrowUp
     else
         Icons.Filled.KeyboardArrowDown
@@ -309,27 +306,81 @@ private fun mapToDropDown(state: SCCUIWindowState){
                  .onGloballyPositioned { coordinates ->
                      // This value is used to assign to
                      // the DropDown the same width
-                     mTextFieldSize = coordinates.size.toSize()
+                     state.mTextFieldSize[0] = coordinates.size.toSize()
                 },
             label = {Text("Select key to map to")},
             trailingIcon = {
                 Icon(icon,"contentDescription",
-                    Modifier.clickable { mExpanded = !mExpanded })
+                    Modifier.clickable { state.mExpanded[0] = !state.mExpanded[0] })
             }
         )
 
         // Create a drop-down menu with list of keys,
         // when clicked, set the Text Field text as the key selected
         DropdownMenu(
-            expanded = mExpanded,
-            onDismissRequest = { mExpanded = false },
-            modifier = Modifier.width(with(LocalDensity.current){mTextFieldSize.width.toDp()})
+            expanded = state.mExpanded[0],
+            onDismissRequest = { state.mExpanded[0] = false },
+            modifier = Modifier.width(with(LocalDensity.current){state.mTextFieldSize[0].width.toDp()})
         ) {
             state.mappingKeys.forEach {
                 DropdownMenuItem(onClick = {
                     state.mapToDescription = it.description
                     state.mapTo = it.name
-                    mExpanded = false
+                    state.mExpanded[0] = false
+                }) {
+                    Text(
+                        text = it.description
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: Int) {
+
+
+    // Up Icon when expanded and down icon when collapsed
+    val icon = if (state.mExpanded[index])
+        Icons.Filled.KeyboardArrowUp
+    else
+        Icons.Filled.KeyboardArrowDown
+
+    Column (modifier = Modifier.padding(20.dp)) {
+
+        // Create an Outlined Text Field
+        // with icon and not expanded
+        OutlinedTextField(
+            value = state.layerKeyDescription[layerKeyNo],
+            onValueChange = { state.layerKeyDescription[layerKeyNo] = it },
+            modifier = Modifier
+                //.fillMaxWidth()
+                .onGloballyPositioned { coordinates ->
+                    // This value is used to assign to
+                    // the DropDown the same width
+                    state.mTextFieldSize[index] = coordinates.size.toSize()
+                },
+            label = {Text("Select key(s) to access layer")},
+            trailingIcon = {
+                Icon(icon,"contentDescription",
+                    Modifier.clickable { state.mExpanded[index] = !state.mExpanded[index] })
+            }
+        )
+
+        // Create a drop-down menu with list of keys,
+        // when clicked, set the Text Field text as the key selected
+        DropdownMenu(
+            expanded = state.mExpanded[index],
+            onDismissRequest = { state.mExpanded[index] = false },
+            modifier = Modifier.width(with(LocalDensity.current){state.mTextFieldSize[index].width.toDp()})
+        ) {
+            state.mappingKeys.forEach {
+                DropdownMenuItem(onClick = {
+                    state.layerKeyDescription[layerKeyNo] = it.description
+                    state.layerKeyName[layerKeyNo] = it.name
+                    state.mExpanded[index] = false
                 }) {
                     Text(
                         text = it.description
@@ -341,17 +392,58 @@ private fun mapToDropDown(state: SCCUIWindowState){
 }
 
 @Composable
-private fun applyButton(state: SCCUIWindowState) {
+private fun applyMapToButton(state: SCCUIWindowState) {
     Button(
         modifier = Modifier.padding(28.dp),
         onClick = {
             state.rows[state.row][state.column].label = state.label
-            state.rows[state.row][state.column].mapTo[state.layer] = state.mapTo
-            state.updateRemapblock()
+            if (state.rows[state.row][state.column].mapTo[state.layer] != null) {
+                if (!state.rows[state.row][state.column].mapTo[state.layer]!!.startsWith("FN")) { //FN keys cannot be overwritten!
+                    if (state.mapTo == "NOMAPPING") { //delete mapping
+                        state.rows[state.row][state.column].mapTo[state.layer] = null
+                        state.mapTo = ""
+                        state.mapToDescription = ""
+                    } else {
+                        state.rows[state.row][state.column].mapTo[state.layer] = state.mapTo
+                    }
+                }
+            } else {
+                state.rows[state.row][state.column].mapTo[state.layer] = state.mapTo
+            }
+            state.updateRemapblockOutput(state.layer)
+
         }
     ) { Text("APPLY") }
 }
 
+@Composable
+private fun applyLayerKeyButton(state: SCCUIWindowState) {
+    Button(
+        modifier = Modifier.padding(28.dp),
+        onClick = {
+            for (x in 0..2) {
+                var i = 1
+                while (i < 9) {
+                    if (state.fnKey[i] == "") {
+                        println(state.layerKeyName[x])
+                        //state.fnKey[i] = state.layerKeyName[x] //TODO diese Zeile schiesst die app ab
+                        println(state.fnKey[i])
+                        //state.layerKey[state.layer][x] = i
+                        //state.setMapTo(listOf(state.layerKeyName[x], "FN"+i), 0)
+                        break
+                    } else if (state.fnKey[i] == state.layerKeyName[x]) {
+                        state.layerKey[state.layer][x] = i
+                        state.setMapTo(listOf(state.layerKeyName[x], "FN"+i), 0)
+                        break
+                    } else {//TODO: FN Keys FULL
+                    }
+                }
+            }
+            //state.updateLayerblockOutput()
+            //state.updateRemapblockOutput(0)
+        }
+    ) { Text("APPLY") }
+}
 
 
 
