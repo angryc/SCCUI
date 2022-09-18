@@ -17,13 +17,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.window.*
 import common.LocalAppResources
-import evalBash
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import util.FileDialog
 import util.YesNoCancelDialog
-import java.io.File
 
 
 @Composable
@@ -47,6 +43,8 @@ fun SCCUIWindow(state: SCCUIWindowState) {
         WindowMenuBar(state)
 
         Column {
+
+            //UI elements for switching layers and selecting layer keys
             Row {
                 for (i in 0..8) {
                     layerButton(state, i)
@@ -54,14 +52,14 @@ fun SCCUIWindow(state: SCCUIWindowState) {
             }
             Row {
                 if (state.layer != 0) {
-                    for (i in 0..2) {
+                    for (i in 0..2) { //must be 0-2 not 1-3 !
                         layerKeyDropDown(state,i+1, i)
                     }
                     applyLayerKeyButton(state)
                 }
             }
 
-
+            // draw keyboard and keys
             keyboard(state)
 
             //UI elements for remapping
@@ -92,9 +90,8 @@ fun SCCUIWindow(state: SCCUIWindowState) {
                     .requiredWidth(500.dp)
                     .border(BorderStroke(2.dp, Color.LightGray))
                     .padding(20.dp)
-                    //.scrollable(ScrollableState { })
                     .verticalScroll(ScrollState(1))
-                //label = { Text("Output")}
+
             )
 
 
@@ -103,7 +100,7 @@ fun SCCUIWindow(state: SCCUIWindowState) {
             Button(
                 modifier = Modifier.padding(20.dp),
                 onClick = {
-                    writeTempFile(state, scope)
+                    state.writeTempFile(scope)
                 }
             ) { Text("FLASH SOARER'S CONVERTER") }
 
@@ -145,33 +142,7 @@ fun SCCUIWindow(state: SCCUIWindowState) {
 }
 
 
-private fun writeTempFile(state: SCCUIWindowState, scope: CoroutineScope) = runBlocking {
-    val resourcesDir = File(System.getProperty("compose.application.resources.dir")).toString()
-    val command_scas_win = resourcesDir + "\\scas " + resourcesDir + "\\temp.txt " + resourcesDir + "\\temp.bin"
-    val command_scwr_win = resourcesDir + "\\scwr " + resourcesDir + "\\temp.bin"
-    val command_scas = resourcesDir + "/scas " + resourcesDir + "/temp.txt " + resourcesDir + "/temp.bin"
-    val command_scwr = resourcesDir + "/scwr " + resourcesDir + "/temp.bin"
 
-    state.saveTemp(resourcesDir)
-    Thread.sleep(1000)
-    if (System.getProperty("os.name").lowercase().contains("win")) {
-        state.commandLine = Runtime.getRuntime().exec(command_scas_win).toString()
-        scope.launch {
-            if (state.askToFlash()) {
-                state.commandLine = Runtime.getRuntime().exec(command_scwr_win).toString()
-            }
-        }
-
-    } else {
-        state.commandLine = Runtime.getRuntime().exec(command_scas).toString()
-        scope.launch {
-            if (state.askToFlash()) {
-                state.commandLine = command_scwr.evalBash().getOrThrow()
-            }
-
-        }
-    }
-}
 
 @Composable
 private fun layerButton (state: SCCUIWindowState, layer: Int) {
@@ -186,6 +157,15 @@ private fun layerButton (state: SCCUIWindowState, layer: Int) {
 
             }
             state.layer = layer
+            for (i in 0..2) {
+                if (state.layerKey[layer][i] != 0) {
+                    state.layerKeyNameTemp[i] = state.fnKey[state.layerKey[layer][i]]
+                }
+                if (state.fnKey[state.layerKey[layer][i]] != "" && state.layerKey[layer][i] != 0 && state.mappingKeys.indexOfFirst { it.name == state.fnKey[state.layerKey[layer][i]] } != -1) {
+                    state.layerKeyDescriptionTemp[i] = state.mappingKeys[state.mappingKeys.indexOfFirst { it.name == state.fnKey[state.layerKey[layer][i]] }].description
+                } else { state.layerKeyDescriptionTemp[i] = "" } //this is only done to update the variable and therefore the UI
+            }
+
             state.updateRemapblockOutput(layer)
             state.updateLayerblockOutput()
         },
@@ -353,8 +333,8 @@ private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: In
         // Create an Outlined Text Field
         // with icon and not expanded
         OutlinedTextField(
-            value = state.layerKeyDescription[layerKeyNo],
-            onValueChange = { state.layerKeyDescription[layerKeyNo] = it },
+            value = state.layerKeyDescriptionTemp[layerKeyNo],
+            onValueChange = { state.layerKeyDescriptionTemp[layerKeyNo] = it },
             modifier = Modifier
                 //.fillMaxWidth()
                 .onGloballyPositioned { coordinates ->
@@ -378,8 +358,8 @@ private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: In
         ) {
             state.mappingKeys.forEach {
                 DropdownMenuItem(onClick = {
-                    state.layerKeyDescription[layerKeyNo] = it.description
-                    state.layerKeyName[layerKeyNo] = it.name
+                    state.layerKeyDescriptionTemp[layerKeyNo] = it.description
+                    state.layerKeyNameTemp[layerKeyNo] = it.name
                     state.mExpanded[index] = false
                 }) {
                     Text(
@@ -420,28 +400,7 @@ private fun applyMapToButton(state: SCCUIWindowState) {
 private fun applyLayerKeyButton(state: SCCUIWindowState) {
     Button(
         modifier = Modifier.padding(28.dp),
-        onClick = {
-            for (x in 0..2) {
-                var i = 1
-                while (i < 9) {
-                    if (state.fnKey[i] == "") {
-                        println(state.layerKeyName[x])
-                        //state.fnKey[i] = state.layerKeyName[x] //TODO diese Zeile schiesst die app ab
-                        println(state.fnKey[i])
-                        //state.layerKey[state.layer][x] = i
-                        //state.setMapTo(listOf(state.layerKeyName[x], "FN"+i), 0)
-                        break
-                    } else if (state.fnKey[i] == state.layerKeyName[x]) {
-                        state.layerKey[state.layer][x] = i
-                        state.setMapTo(listOf(state.layerKeyName[x], "FN"+i), 0)
-                        break
-                    } else {//TODO: FN Keys FULL
-                    }
-                }
-            }
-            //state.updateLayerblockOutput()
-            //state.updateRemapblockOutput(0)
-        }
+        onClick = { state.applyLayerKeyButtonPressed() }
     ) { Text("APPLY") }
 }
 
