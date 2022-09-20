@@ -132,10 +132,16 @@ class SCCUIWindowState(
                         } else {
                             layer = 0
                             setMapTo(s, layer)
+                            if (s[1].startsWith("FN")) {
+                                fnKey[fnKey.indexOfFirst { it == s[1] }] = s[0]
+                            }
                         }
                         firstLine = false
                     } else {
                         setMapTo(s, layer)
+                        if (s[1].startsWith("FN")) {
+                            fnKey[fnKey.indexOfFirst { it == s[1] }] = s[0]
+                        }
                     }
 
                 } else if (layerBlockFound) {
@@ -247,7 +253,7 @@ class SCCUIWindowState(
             var o = 0
             layerKey[i].forEach {
                 if (it != 0) {
-                    layerblockOutput += " " + fnKey[it]
+                    layerblockOutput += " FN" + it.toString()
                     o++
                 }
             }
