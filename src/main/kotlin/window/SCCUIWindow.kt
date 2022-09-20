@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -44,6 +45,11 @@ fun SCCUIWindow(state: SCCUIWindowState) {
 
         Column {
 
+            //UI element for selecting keyboard (layout)
+            Row {
+                keyboardDropDown(state)
+            }
+
             //UI elements for switching layers and selecting layer keys
             Row {
                 for (i in 0..8) {
@@ -60,6 +66,7 @@ fun SCCUIWindow(state: SCCUIWindowState) {
             }
 
             // draw keyboard and keys
+            //state.initKeyboard(0)
             keyboard(state)
 
             //UI elements for remapping
@@ -86,7 +93,7 @@ fun SCCUIWindow(state: SCCUIWindowState) {
                 value = state.remapblockOutput[state.layer],
                 onValueChange = { state.remapblockOutput[state.layer] = it },
                 modifier = Modifier
-                    .height(150.dp)
+                    .height(100.dp)
                     .requiredWidth(500.dp)
                     .border(BorderStroke(2.dp, Color.LightGray))
                     .padding(20.dp)
@@ -147,6 +154,7 @@ fun SCCUIWindow(state: SCCUIWindowState) {
 @Composable
 private fun layerButton (state: SCCUIWindowState, layer: Int) {
     Button(
+        modifier = Modifier.padding(0.dp, 0.dp),
         onClick = {
             for (i in 0..8) {
                 if (i != layer) {
@@ -267,9 +275,9 @@ private fun keyboard(state: SCCUIWindowState) {
 @Composable
 private fun mapToDropDown(state: SCCUIWindowState){
 
-
+    val no = 0
     // Up Icon when expanded and down icon when collapsed
-    val icon = if (state.mExpanded[0])
+    val icon = if (state.mExpanded[no])
         Icons.Filled.KeyboardArrowUp
     else
         Icons.Filled.KeyboardArrowDown
@@ -286,27 +294,27 @@ private fun mapToDropDown(state: SCCUIWindowState){
                  .onGloballyPositioned { coordinates ->
                      // This value is used to assign to
                      // the DropDown the same width
-                     state.mTextFieldSize[0] = coordinates.size.toSize()
+                     state.mTextFieldSize[no] = coordinates.size.toSize()
                 },
             label = {Text("Select key to map to")},
             trailingIcon = {
                 Icon(icon,"contentDescription",
-                    Modifier.clickable { state.mExpanded[0] = !state.mExpanded[0] })
+                    Modifier.clickable { state.mExpanded[no] = !state.mExpanded[no] })
             }
         )
 
         // Create a drop-down menu with list of keys,
         // when clicked, set the Text Field text as the key selected
         DropdownMenu(
-            expanded = state.mExpanded[0],
-            onDismissRequest = { state.mExpanded[0] = false },
-            modifier = Modifier.width(with(LocalDensity.current){state.mTextFieldSize[0].width.toDp()})
+            expanded = state.mExpanded[no],
+            onDismissRequest = { state.mExpanded[no] = false },
+            modifier = Modifier.width(with(LocalDensity.current){state.mTextFieldSize[no].width.toDp()})
         ) {
             state.mappingKeys.forEach {
                 DropdownMenuItem(onClick = {
                     state.mapToDescription = it.description
                     state.mapTo = it.name
-                    state.mExpanded[0] = false
+                    state.mExpanded[no] = false
                 }) {
                     Text(
                         text = it.description
@@ -402,6 +410,61 @@ private fun applyLayerKeyButton(state: SCCUIWindowState) {
         modifier = Modifier.padding(28.dp),
         onClick = { state.applyLayerKeyButtonPressed() }
     ) { Text("APPLY") }
+}
+
+@Composable
+private fun keyboardDropDown(state: SCCUIWindowState){
+
+    val no = 4
+    // Up Icon when expanded and down icon when collapsed
+    val icon = if (state.mExpanded[no])
+        Icons.Filled.KeyboardArrowUp
+    else
+        Icons.Filled.KeyboardArrowDown
+
+    Column (modifier = Modifier.padding(20.dp)) {
+
+        // Create an Outlined Text Field
+        // with icon and not expanded
+        OutlinedTextField(
+            value = state.keyboards[state.keyboard].name,
+            onValueChange = {
+                state.keyboard = it.toInt()
+            },
+            modifier = Modifier
+                //.fillMaxWidth()
+                .onGloballyPositioned { coordinates ->
+                    // This value is used to assign to
+                    // the DropDown the same width
+                    state.mTextFieldSize[no] = coordinates.size.toSize()
+                },
+            label = {Text("Select keyboard")},
+            trailingIcon = {
+                Icon(icon,"contentDescription",
+                    Modifier.clickable { state.mExpanded[no] = !state.mExpanded[no] })
+            }
+        )
+
+        // Create a drop-down menu with list of keys,
+        // when clicked, set the Text Field text as the key selected
+        DropdownMenu(
+            expanded = state.mExpanded[no],
+            onDismissRequest = { state.mExpanded[no] = false },
+            modifier = Modifier.width(with(LocalDensity.current){state.mTextFieldSize[no].width.toDp()})
+        ) {
+            state.keyboards.forEach {
+                DropdownMenuItem(onClick = {
+                    state.keyboard = it.index
+                    state.initKeyboard(state.keyboard)
+                    state.mExpanded[no] = false
+                }) {
+                    Text(
+                        text = it.name
+                    )
+                }
+            }
+        }
+    }
 }
 
 
