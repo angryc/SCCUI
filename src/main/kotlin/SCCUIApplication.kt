@@ -1,6 +1,8 @@
+import androidx.compose.material.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.window.ApplicationScope
 import androidx.compose.ui.window.MenuScope
 import androidx.compose.ui.window.Tray
@@ -26,7 +28,7 @@ private fun ApplicationScope.ApplicationTray(state: SCCUIApplicationState) {
     Tray(
         LocalAppResources.current.icon,
         state = state.tray,
-        tooltip = "Notepad",
+        tooltip = "SCCUI",
         menu = { ApplicationMenu(state) }
     )
 }
