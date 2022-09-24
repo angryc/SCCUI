@@ -82,15 +82,16 @@ class SCCUIWindowState(
     val activeButtonColor = Color.Blue
     val inactiveButtonColor = Color.LightGray
 
-    val oldFont = FontFamily.Monospace
-    /*
+    val oldFont //= FontFamily.Monospace
     = FontFamily(
         Font(
-            resource = "fonts/VT323-Regular.ttf",
+            resource = File(System.getProperty("compose.application.resources.dir")).toString()+ "/VT323-Regular.ttf",
+            //resource = "fonts/ModernDOS8x14.ttf",
+            //resource = "fonts/Perfect DOS VGA 437.ttf",
             weight = FontWeight.Normal,
             style = FontStyle.Normal,
         )
-    )*/
+    )
 
 
 
