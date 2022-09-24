@@ -193,7 +193,12 @@ private fun layerButton (state: SCCUIWindowState, layer: Int) {
                 }
                 if (state.fnKey[state.layerKey[layer][i]] != "" && state.layerKey[layer][i] != 0 && state.mappingKeys.indexOfFirst { it.name == state.fnKey[state.layerKey[layer][i]] } != -1) {
                     state.layerKeyDescriptionTemp[i] = state.mappingKeys[state.mappingKeys.indexOfFirst { it.name == state.fnKey[state.layerKey[layer][i]] }].description
-                } else { state.layerKeyDescriptionTemp[i] = "" } //this is only done to update the variable and therefore the UI
+                } else { //this is only done to update the variable and therefore the UI
+                    state.layerKeyDescriptionTemp[i] = ""
+                    state.label = ""
+                    state.mapTo = ""
+                    state.mapToDescription = ""
+                }
             }
 
             state.updateRemapblockOutput(layer)
@@ -467,9 +472,7 @@ private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: In
                         state.layerKeyNameTemp[layerKeyNo] = it.name
                         state.mExpanded[index] = false
                     }) {
-                        Text(
-                            text = it.description, fontFamily = state.oldFont
-                        )
+                        Text(text = it.description, fontFamily = state.oldFont)
                     }
                 }
             }
@@ -502,24 +505,7 @@ private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: In
             }
             Button(
                 modifier = Modifier.padding(0.dp),
-                onClick = {
-                    state.rows[state.row][state.column].label = state.label
-                    if (state.rows[state.row][state.column].mapTo[state.layer] != null) {
-                        if (!state.rows[state.row][state.column].mapTo[state.layer]!!.startsWith("FN")) { //FN keys cannot be overwritten!
-                            if (state.mapTo == "NOMAPPING") { //delete mapping
-                                state.rows[state.row][state.column].mapTo[state.layer] = null
-                                state.mapTo = ""
-                                state.mapToDescription = ""
-                            } else {
-                                state.rows[state.row][state.column].mapTo[state.layer] = state.mapTo
-                            }
-                        }
-                    } else {
-                        state.rows[state.row][state.column].mapTo[state.layer] = state.mapTo
-                    }
-                    state.updateRemapblockOutput(state.layer)
-
-                },
+                onClick = { state.applyMapToButtonPressed() },
                 shape = RectangleShape,
                 colors = ButtonDefaults.buttonColors(state.activeButtonColor)
             ) { Text("Apply", fontFamily = state.oldFont, color = state.activeButtonTextColor) }
@@ -556,9 +542,7 @@ private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: In
         Box {
             Button(
                 modifier = Modifier.padding(30.dp),
-                onClick = {
-
-                },
+                onClick = {                },
                 shape = RectangleShape,
                 elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
                 colors = ButtonDefaults.buttonColors(Color.Black)
@@ -569,9 +553,7 @@ private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: In
             }
             Button(
                 modifier = Modifier.padding(20.dp),
-                onClick = {
-                    state.writeTempFile(scope)
-                },
+                onClick = { state.writeTempFile(scope) },
                 shape = RectangleShape,
                 elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
                 colors = ButtonDefaults.buttonColors(state.activeButtonColor)
