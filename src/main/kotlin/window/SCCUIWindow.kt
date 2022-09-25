@@ -50,7 +50,7 @@ fun SCCUIWindow(state: SCCUIWindowState) {
     Window(
         state = state.window,
         title = titleOf(state),
-        resizable = true,
+        resizable = false,
         icon = LocalAppResources.current.icon,
         onCloseRequest = { exit() }
     ) {
@@ -58,8 +58,8 @@ fun SCCUIWindow(state: SCCUIWindowState) {
 
         WindowNotifications(state)
         WindowMenuBar(state)
-        //Column {
-            Box (modifier = Modifier.background(Color.LightGray).padding(10.dp).border(2.dp, Color.Black).fillMaxWidth().fillMaxHeight()) {
+        Column {
+            Box (modifier = Modifier.background(Color.LightGray).padding(10.dp).border(2.dp, Color.Black).fillMaxWidth().fillMaxHeight(0.961F)) {
                 Column (modifier = Modifier.padding(10.dp)) {
 
                     //UI element for selecting keyboard (layout)
@@ -71,10 +71,11 @@ fun SCCUIWindow(state: SCCUIWindowState) {
                         Box(modifier = Modifier.border(2.dp, Color.Black).padding(10.dp)) {
                             Column {
 
-                                Row {
+                                Row (modifier = Modifier.fillMaxWidth()) {
                                     for (i in 0..8) {
                                         layerButton(state, i)
                                     }
+                                    macroButton(state)
                                 }
                                 Row {
                                     if (state.layer != 0) {
@@ -86,35 +87,37 @@ fun SCCUIWindow(state: SCCUIWindowState) {
                                 }
                             }
                         }
+                        if (state.macroMode) {
+                            //TODO
+                        } else {
+                            // draw keyboard and keys
+                            //state.initKeyboard(0)
+                            Row(modifier = Modifier.padding(5.dp)) {}
+                            Box(modifier = Modifier.border(2.dp, Color.Black).padding(10.dp).fillMaxWidth()) {
 
-                        // draw keyboard and keys
-                        //state.initKeyboard(0)
-                        Row(modifier = Modifier.padding(5.dp)) {}
-                        Box(modifier = Modifier.border(2.dp, Color.Black).padding(10.dp)) {
+                                Column(modifier = Modifier.padding(10.dp)) {
 
-                            Column(modifier = Modifier.padding(10.dp)) {
+                                    Box(modifier = Modifier.background(Color.White).border(2.dp, Color.Black)) {
+                                        keyboard(state)
+                                    }
+                                    //UI elements for remapping
+                                    Row(
+                                        modifier = Modifier
+                                            .padding(0.dp, 10.dp)
 
-                                Box(modifier = Modifier.background(Color.White).border(2.dp, Color.Black)) {
-                                    keyboard(state)
+                                    ) {
+
+                                        selectedKey(state)
+                                        //Text(" --> ")
+                                        mapToDropDown(state)
+
+                                        applyMapToButton(state)
+                                    }
                                 }
-                                //UI elements for remapping
-                                Row(
-                                    modifier = Modifier
-                                        .padding(0.dp, 10.dp)
 
-                                ) {
 
-                                    selectedKey(state)
-                                    //Text(" --> ")
-                                    mapToDropDown(state)
-
-                                    applyMapToButton(state)
-                                }
                             }
-
-
                         }
-
                         // Output Text Field
                         /*
                     BasicTextField(
@@ -147,7 +150,7 @@ fun SCCUIWindow(state: SCCUIWindowState) {
             ) {
                 Text(text = state.statusText, color = state.activeButtonTextColor, fontFamily = state.oldFont)
             }
-        //}
+        }
 
 
         if (state.openDialog.isAwaiting) {
@@ -193,6 +196,7 @@ private fun layerButton (state: SCCUIWindowState, layer: Int) {
             .padding(0.dp, 0.dp),
             //.border(0.dp, Color.LightGray, RectangleShape),
         onClick = {
+            state.macroMode = false
             for (i in 0..8) {
                 if (i != layer) {
                     state.layerButtonColor[i] = state.inactiveButtonColor
@@ -228,6 +232,28 @@ private fun layerButton (state: SCCUIWindowState, layer: Int) {
 
 
     ) { Text("Layer "+layer, fontFamily = state.oldFont, color = state.layerButtonTextColor[layer] ) }
+
+
+}
+
+@Composable
+private fun macroButton (state: SCCUIWindowState) {
+    Button(
+        modifier = Modifier
+            .padding(0.dp, 0.dp),
+        //.border(0.dp, Color.LightGray, RectangleShape),
+        onClick = {
+            state.statusText = "Not implemented yet."
+            state.macroMode = true
+
+        },
+        shape = RectangleShape,
+        elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
+        //border = ButtonDefaults.outlinedBorder(RectangleShape, 2.dp, Color.Black, Size(5F, 5F)),
+        colors = ButtonDefaults.buttonColors(state.inactiveButtonColor)
+
+
+    ) { Text("Macros", fontFamily = state.oldFont, color = state.inactiveButtonTextColor ) }
 
 
 }
@@ -401,7 +427,7 @@ private fun mapToDropDown(state: SCCUIWindowState){
             expanded = state.mExpanded[no],
             onDismissRequest = { state.mExpanded[no] = false },
             modifier = Modifier.width(with(LocalDensity.current) { state.mTextFieldSize[no].width.toDp() })
-                .height(200.dp)
+                .height(400.dp)
         ) {
             var i = 0
             state.mappingKeysDropDown.forEach {
@@ -412,7 +438,7 @@ private fun mapToDropDown(state: SCCUIWindowState){
                 }
                 ) {
                     Text(
-                        text = it.description, fontFamily = state.oldFont
+                        text = it.description, fontFamily = state.oldFont//, fontSize = 12.sp
                     )
                 }
             }
@@ -481,7 +507,7 @@ private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: In
                 expanded = state.mExpanded[index],
                 onDismissRequest = { state.mExpanded[index] = false },
                 modifier = Modifier.width(with(LocalDensity.current) { state.mTextFieldSize[index].width.toDp() })
-                    .height(200.dp)
+                    .height(400.dp)
             ) {
                 state.mappingKeysDropDown.forEach {
                     DropdownMenuItem(onClick = {

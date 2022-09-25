@@ -8,6 +8,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.platform.Font
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Notification
 import androidx.compose.ui.window.WindowPlacement
@@ -63,7 +66,7 @@ class SCCUIWindowState(
     private var _notifications = Channel<NotepadWindowNotification>(0)
     val notifications: Flow<NotepadWindowNotification> get() = _notifications.receiveAsFlow()
 
-    val window = WindowState(height = 1000.dp, width = 1100.dp)
+    val window = WindowState(height = 920.dp, width = 1100.dp)
     val defaultWidth = 40.dp
     val defaultHeight = 40.dp
 
@@ -78,11 +81,12 @@ class SCCUIWindowState(
     val inactiveButtonColor = Color.LightGray
 
     val oldFont = FontFamily.Monospace
-    /*= FontFamily(
+    /*val oldFont = FontFamily(
         Font(
-            //resource = File(System.getProperty("compose.application.resources.dir")).toString()+ "/VT323-Regular.ttf",
+            resource = File(System.getProperty("compose.application.resources.dir")).toString()+ "/VT323-Regular.ttf",
             //resource = "fonts/ModernDOS8x14.ttf",
-            resource = "fonts/Perfect DOS VGA 437.ttf",
+            //resource = "VT323-Regular.ttf",
+            //resource = "fonts/Perfect DOS VGA 437.ttf",
             weight = FontWeight.Normal,
             style = FontStyle.Normal
         )
@@ -102,6 +106,7 @@ class SCCUIWindowState(
     fun read() {
         val resourcesDir = File(System.getProperty("compose.application.resources.dir")).toString()
         val filePath: String
+        val commandDisWin = ProcessBuilder(resourcesDir+"\\scdis", resourcesDir+"\\temp.bin", resourcesDir+"\\temp.txt")
         val command_scdis_win = resourcesDir+"\\scdis "+resourcesDir+"\\temp.bin "+resourcesDir+"\\temp.txt"
         val command_scrd_win = resourcesDir+"\\scrd "+resourcesDir+"\\temp.bin"
         val command_scdis = resourcesDir+"/scdis "+resourcesDir+"/temp.bin "+resourcesDir+"/temp.txt"
@@ -111,6 +116,8 @@ class SCCUIWindowState(
             commandLine = Runtime.getRuntime().exec(command_scrd_win).toString()
             Thread.sleep(1000)
             commandLine = Runtime.getRuntime().exec(command_scdis_win).toString()
+            //var process = commandDisWin.start()
+            //println(process.)
             filePath = resourcesDir + "\\temp.txt"
         } else {
             commandLine = command_scrd.evalBash().getOrThrow()
@@ -201,8 +208,8 @@ class SCCUIWindowState(
 
 
 
-    var layerButtonColor = mutableStateListOf(Color.Blue, Color.LightGray, Color.LightGray, Color.LightGray, Color.LightGray, Color.LightGray, Color.LightGray, Color.LightGray, Color.LightGray)
-    var layerButtonTextColor = mutableStateListOf(Color.White, Color.DarkGray, Color.DarkGray, Color.DarkGray, Color.DarkGray, Color.DarkGray, Color.DarkGray, Color.DarkGray, Color.DarkGray)
+    var layerButtonColor = mutableStateListOf(activeButtonColor, inactiveButtonColor, inactiveButtonColor, inactiveButtonColor, inactiveButtonColor, inactiveButtonColor, inactiveButtonColor, inactiveButtonColor, inactiveButtonColor)
+    var layerButtonTextColor = mutableStateListOf(activeButtonTextColor, inactiveButtonTextColor, inactiveButtonTextColor, inactiveButtonTextColor, inactiveButtonTextColor, inactiveButtonTextColor, inactiveButtonTextColor, inactiveButtonTextColor, inactiveButtonTextColor)
 
     private var _layer by mutableStateOf(0)
     var layer: Int
@@ -325,6 +332,25 @@ class SCCUIWindowState(
 
 
 
+
+
+
+
+    // ########### MACROS #############
+
+
+    var macroMode by mutableStateOf(false)
+
+
+
+
+
+
+
+
+
+
+
     // ########### MAPPINGS #############
 
 
@@ -369,8 +395,12 @@ class SCCUIWindowState(
                 statusText = "Function keys cannot be overwritten. Select relevant layer and deselect key there."
             }
         } else {
-            rows[row][column].mapTo[layer] = mapTo
-            statusText = "Mapping NOT saved, because no key to map to was selected."
+            if (mapTo == "") {
+                statusText = "Mapping NOT saved, because no key to map to was selected."
+            } else {
+                rows[row][column].mapTo[layer] = mapTo
+                statusText = "Mapping saved."
+            }
         }
         updateRemapblockOutput(layer)
     }
@@ -431,6 +461,8 @@ class SCCUIWindowState(
             rows[r].forEach {
                 if (s[0] == it.name) {
                     it.mapTo[layer] = s[1]
+                    it.label += " " // only done to update UI ...
+                    it.label.trim()
                 }
             }
             r++
