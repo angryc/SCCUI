@@ -15,8 +15,8 @@ repositories {
 dependencies {
     implementation(compose.desktop.currentOs)
     implementation(compose.materialIconsExtended)
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.6.0")
-    implementation("com.sealwu:kscript-tools:1.0.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.6.4")
+    implementation("com.sealwu:kscript-tools:1.0.21")
 }
 
 compose.desktop {

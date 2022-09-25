@@ -16,6 +16,8 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.colorspace.ColorSpace
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
@@ -56,116 +58,131 @@ fun SCCUIWindow(state: SCCUIWindowState) {
 
         WindowNotifications(state)
         WindowMenuBar(state)
-        Box (modifier = Modifier.background(Color.LightGray).padding(10.dp).border(2.dp, Color.Black).fillMaxWidth().fillMaxHeight()) {
-        Column (modifier = Modifier.padding(10.dp)) {
+        //Column {
+            Box (modifier = Modifier.background(Color.LightGray).padding(10.dp).border(2.dp, Color.Black).fillMaxWidth().fillMaxHeight()) {
+                Column (modifier = Modifier.padding(10.dp)) {
 
-            //UI element for selecting keyboard (layout)
-            Row {
-                keyboardDropDown(state)
-            }
-            if (state.keyboard != 0) {
-                //UI elements for switching layers and selecting layer keys
-                Box(modifier = Modifier.border(2.dp, Color.Black).padding(10.dp)) {
-                    Column {
+                    //UI element for selecting keyboard (layout)
+                    Row {
+                        keyboardDropDown(state)
+                    }
+                    if (state.keyboard != 0) {
+                        //UI elements for switching layers and selecting layer keys
+                        Box(modifier = Modifier.border(2.dp, Color.Black).padding(10.dp)) {
+                            Column {
 
-                        Row {
-                            for (i in 0..8) {
-                                layerButton(state, i)
-                            }
-                        }
-                        Row {
-                            if (state.layer != 0) {
-                                for (i in 0..2) { //must be 0-2 not 1-3 !
-                                    layerKeyDropDown(state, i + 1, i)
+                                Row {
+                                    for (i in 0..8) {
+                                        layerButton(state, i)
+                                    }
                                 }
-                                applyLayerKeyButton(state)
+                                Row {
+                                    if (state.layer != 0) {
+                                        for (i in 0..2) { //must be 0-2 not 1-3 !
+                                            layerKeyDropDown(state, i + 1, i)
+                                        }
+                                        applyLayerKeyButton(state)
+                                    }
+                                }
                             }
                         }
-                    }
-                }
 
-                // draw keyboard and keys
-                //state.initKeyboard(0)
-                Row(modifier = Modifier.padding(5.dp)) {}
-                Box(modifier = Modifier.border(2.dp, Color.Black).padding(10.dp)) {
+                        // draw keyboard and keys
+                        //state.initKeyboard(0)
+                        Row(modifier = Modifier.padding(5.dp)) {}
+                        Box(modifier = Modifier.border(2.dp, Color.Black).padding(10.dp)) {
 
-                    Column(modifier = Modifier.padding(10.dp)) {
+                            Column(modifier = Modifier.padding(10.dp)) {
 
-                        Box(modifier = Modifier.background(Color.White).border(2.dp, Color.Black)) {
-                            keyboard(state)
+                                Box(modifier = Modifier.background(Color.White).border(2.dp, Color.Black)) {
+                                    keyboard(state)
+                                }
+                                //UI elements for remapping
+                                Row(
+                                    modifier = Modifier
+                                        .padding(0.dp, 10.dp)
+
+                                ) {
+
+                                    selectedKey(state)
+                                    //Text(" --> ")
+                                    mapToDropDown(state)
+
+                                    applyMapToButton(state)
+                                }
+                            }
+
+
                         }
-                        //UI elements for remapping
-                        Row(
-                            modifier = Modifier
-                                .padding(0.dp, 10.dp)
 
-                        ) {
+                        // Output Text Field
+                        /*
+                    BasicTextField(
+                        value = state.remapblockOutput[state.layer],
+                        onValueChange = { state.remapblockOutput[state.layer] = it },
+                        modifier = Modifier
+                            .height(100.dp)
+                            .requiredWidth(500.dp)
+                            .border(BorderStroke(2.dp, Color.LightGray))
+                            .padding(20.dp)
+                            .verticalScroll(ScrollState(1))
 
-                            selectedKey(state)
-                            //Text(" --> ")
-                            mapToDropDown(state)
+                    )*/
 
-                            applyMapToButton(state)
-                        }
+
+                        //button to flash the converter
+                        flashButton(state, scope)
                     }
+
+
 
 
                 }
-
-                // Output Text Field
-                /*
-            BasicTextField(
-                value = state.remapblockOutput[state.layer],
-                onValueChange = { state.remapblockOutput[state.layer] = it },
-                modifier = Modifier
-                    .height(100.dp)
-                    .requiredWidth(500.dp)
-                    .border(BorderStroke(2.dp, Color.LightGray))
-                    .padding(20.dp)
-                    .verticalScroll(ScrollState(1))
-
-            )*/
-
-
-                //button to flash the converter
-                flashButton(state, scope)
             }
+            Box (modifier = Modifier
+                .background(Color(0xFF00AAAA))
+                .fillMaxWidth()
+                .padding(10.dp)
+                //.align(Alignment.Bottom)
+            ) {
+                Text(text = state.statusText, color = state.activeButtonTextColor, fontFamily = state.oldFont)
+            }
+        //}
 
-            if (state.openDialog.isAwaiting) {
-                FileDialog(
-                    title = "Soarer's Converter Config UI",
-                    isLoad = true,
-                    onResult = {
-                        state.openDialog.onResult(it)
-                    }
-                )
-            }
 
-            if (state.saveDialog.isAwaiting) {
-                FileDialog(
-                    title = "Soarer's Converter Config UI",
-                    isLoad = false,
-                    onResult = { state.saveDialog.onResult(it) }
-                )
-            }
+        if (state.openDialog.isAwaiting) {
+            FileDialog(
+                title = "Soarer's Converter Config UI",
+                isLoad = true,
+                onResult = {
+                    state.openDialog.onResult(it)
+                }
+            )
+        }
 
-            if (state.exitDialog.isAwaiting) {
-                YesNoCancelDialog(
-                    title = "Soarer's Converter Config UI",
-                    message = "Save changes?",
-                    onResult = { state.exitDialog.onResult(it) }
-                )
-            }
-            if (state.flashDialog.isAwaiting) {
-                YesNoCancelDialog(
-                    title = "Soarer's Converter Config UI",
-                    message = "Flash?",
-                    onResult = { state.flashDialog.onResult(it) }
-                )
-            }
+        if (state.saveDialog.isAwaiting) {
+            FileDialog(
+                title = "Soarer's Converter Config UI",
+                isLoad = false,
+                onResult = { state.saveDialog.onResult(it) }
+            )
+        }
+
+        if (state.exitDialog.isAwaiting) {
+            YesNoCancelDialog(
+                title = "Soarer's Converter Config UI",
+                message = "Save changes?",
+                onResult = { state.exitDialog.onResult(it) }
+            )
+        }
+        if (state.flashDialog.isAwaiting) {
+            YesNoCancelDialog(
+                title = "Soarer's Converter Config UI",
+                message = "Flash?",
+                onResult = { state.flashDialog.onResult(it) }
+            )
         }
     }
-}
 }
 
 

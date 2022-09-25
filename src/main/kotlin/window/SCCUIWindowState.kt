@@ -70,10 +70,11 @@ class SCCUIWindowState(
     var mExpanded = mutableStateListOf(false, false, false, false, false)
     var mTextFieldSize = mutableStateListOf(Size.Zero, Size.Zero, Size.Zero, Size.Zero, Size.Zero)
 
+     var statusText by mutableStateOf("")
 
     val activeButtonTextColor = Color.White
     val inactiveButtonTextColor = Color.DarkGray
-    val activeButtonColor = Color.Blue
+    val activeButtonColor = Color(0xFF0000AA)
     val inactiveButtonColor = Color.LightGray
 
     val oldFont = FontFamily.Monospace
@@ -256,7 +257,9 @@ class SCCUIWindowState(
             }
             clearUnusedFnKeys()
 
-        } /*
+        }
+        statusText = "Layer Keys saved."
+        /*
         for (x in 0..2) {
             println(layerKey[layer][x])
         } */
@@ -360,10 +363,14 @@ class SCCUIWindowState(
                     mapToDescription = ""
                 } else {
                     rows[row][column].mapTo[layer] = mapTo
+                    statusText = "Mapping saved."
                 }
+            } else {
+                statusText = "Function keys cannot be overwritten. Select relevant layer and deselect key there."
             }
         } else {
             rows[row][column].mapTo[layer] = mapTo
+            statusText = "Mapping NOT saved, because no key to map to was selected."
         }
         updateRemapblockOutput(layer)
     }
