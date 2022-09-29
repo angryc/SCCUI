@@ -87,12 +87,53 @@ fun SCCUIWindow(state: SCCUIWindowState) {
                                 }
                             }
                         }
+                        Row(modifier = Modifier.padding(5.dp)) {}
+
                         if (state.macroMode) {
-                            //TODO
+                            Box(modifier = Modifier.border(2.dp, Color.Black).padding(10.dp).fillMaxWidth()) {
+                                //draw macro UI
+                                Row {
+                                    //List of all macros
+                                    Column {
+                                        macroList(state)
+                                    }
+                                    Column {
+                                        //macro name
+                                        macroName(state)
+                                        //key to trigger macro
+                                        //macroTriggerDropdown(state)
+                                        //TODO add meta keys (CTRL, ALT SHIFT, GUI
+
+
+                                        //macro actions (action, key)
+                                        state.macros[state.selectedMacro].actions.forEach() {
+                                            Text(text = it.keyName)
+                                            Text(text = it.action)
+                                        }
+
+                                        //add new action
+                                        Button(
+                                            modifier = Modifier
+                                                .padding(0.dp, 0.dp),
+                                            //.border(0.dp, Color.LightGray, RectangleShape),
+                                            onClick = {
+                                                state.macros[state.selectedMacro].actions.add(MacroAction("", ""))
+                                            },
+                                            shape = RectangleShape,
+                                            elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp)
+                                            //border = ButtonDefaults.outlinedBorder(RectangleShape, 2.dp, Color.Black, Size(5F, 5F)),
+                                            //colors = ButtonDefaults.buttonColors(state.layerButtonColor[layer])
+
+
+                                        ) { Text("+", fontFamily = state.oldFont, fontSize = 30.sp) }
+
+                                    }
+                                }
+                            }
                         } else {
                             // draw keyboard and keys
                             //state.initKeyboard(0)
-                            Row(modifier = Modifier.padding(5.dp)) {}
+
                             Box(modifier = Modifier.border(2.dp, Color.Black).padding(10.dp).fillMaxWidth()) {
 
                                 Column(modifier = Modifier.padding(10.dp)) {
@@ -189,6 +230,48 @@ fun SCCUIWindow(state: SCCUIWindowState) {
 }
 
 
+@Composable
+private fun macroList(state: SCCUIWindowState) {
+    var i = 0
+    state.macros.forEach() {
+        Button(
+            modifier = Modifier
+                .padding(0.dp, 0.dp),
+            //.border(0.dp, Color.LightGray, RectangleShape),
+            onClick = {
+                state.macroName = it.name
+                state.selectedMacro = i
+            },
+            shape = RectangleShape,
+            elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
+            //border = ButtonDefaults.outlinedBorder(RectangleShape, 2.dp, Color.Black, Size(5F, 5F)),
+            colors = ButtonDefaults.buttonColors(state.inactiveButtonColor)
+
+
+        ) { Text(it.name, fontFamily = state.oldFont, color = state.inactiveButtonTextColor) }
+    }
+    i++
+
+}
+
+
+@Composable
+private fun macroName(state: SCCUIWindowState) {
+    Box {
+
+        OutlinedTextField(
+            value = state.macroName,
+            onValueChange = { state.macroName = it },
+            textStyle = TextStyle(fontFamily = state.oldFont, textAlign = TextAlign.Center),
+            modifier = Modifier.padding(0.dp, 10.dp).border(2.dp, Color.Black, RectangleShape),
+            //singleline = true
+            //label = { Text("Selected Key", fontFamily = FontFamily.Monospace) }
+        )
+        Box (modifier = Modifier.padding(75.dp,4.dp)) {
+            Text("Macro Name",  modifier = Modifier.background(state.inactiveButtonColor).padding(10.dp, 0.dp), fontFamily = state.oldFont)
+        }
+    }
+}
 @Composable
 private fun layerButton (state: SCCUIWindowState, layer: Int) {
     Button(

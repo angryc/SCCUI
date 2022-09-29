@@ -51,6 +51,15 @@ data class MappingKey(
     val description: String
 )
 
+data class Macro(
+    var name: String,
+    val actions: MutableList<MacroAction>
+)
+
+data class MacroAction(
+    var keyName: String,
+    val action: String
+)
 
 
 class SCCUIWindowState(
@@ -340,6 +349,14 @@ class SCCUIWindowState(
 
 
     var macroMode by mutableStateOf(false)
+    var macros = mutableStateListOf(Macro("New", mutableListOf(MacroAction("", ""))))
+    val actions = listOf("PRESS", "MAKE", "BREAK")
+
+    //temp
+    var selectedMacro by mutableStateOf(0)
+    var macroName by mutableStateOf("")
+    var triggerKey by mutableStateOf("")
+    var action by mutableStateOf("")
 
 
 
