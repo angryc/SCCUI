@@ -1184,14 +1184,14 @@ private fun readButton(state: SCCUIWindowState) {
         //fun read() = scope.launch { state.read() }
 
         Menu("File") {
-            Item("New window", onClick = state::newWindow)
+            //Item("New window", onClick = state::newWindow)
             Item("Open file...", onClick = { open() })
             //Item("Read config from converter", onClick = { read() })
             Item("Save", onClick = { save() }, enabled = state.isChanged || state.path == null)
             Separator()
             Item("Exit", onClick = { exit() })
         }
-
+/*
         Menu("Settings") {
             Item(
                 if (state.settings.isTrayEnabled) "Hide tray" else "Show tray",
@@ -1201,5 +1201,5 @@ private fun readButton(state: SCCUIWindowState) {
                 if (state.window.placement == WindowPlacement.Fullscreen) "Exit fullscreen" else "Enter fullscreen",
                 onClick = state::toggleFullscreen
             )
-        }
+        }*/
     }

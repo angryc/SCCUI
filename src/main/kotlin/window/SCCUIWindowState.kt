@@ -127,8 +127,8 @@ class SCCUIWindowState(
         val resourcesDir = File(System.getProperty("compose.application.resources.dir")).toString()
         val filePath: String
         val commandDisWin = ProcessBuilder(resourcesDir+"\\scdis", resourcesDir+"\\temp.bin", resourcesDir+"\\temp.txt")
-        val command_scdis_win = resourcesDir+"\\scdis "+resourcesDir+"\\temp.bin "+resourcesDir+"\\temp.txt"
-        val command_scrd_win = resourcesDir+"\\scrd "+resourcesDir+"\\temp.bin"
+        val command_scdis_win = resourcesDir+"\\scdis.exe "+resourcesDir+"\\temp.bin "+resourcesDir+"\\temp.txt"
+        val command_scrd_win = resourcesDir+"\\scrd.exe "+resourcesDir+"\\temp.bin"
         val command_scdis = resourcesDir+"/scdis "+resourcesDir+"/temp.bin "+resourcesDir+"/temp.txt"
         val command_scrd = resourcesDir+"/scrd "+resourcesDir+"/temp.bin"
 
@@ -655,8 +655,8 @@ class SCCUIWindowState(
     //assemble and write file to Soarer's Converter / ask user before flashing
     fun writeTempFile(scope: CoroutineScope) = runBlocking {
         val resourcesDir = File(System.getProperty("compose.application.resources.dir")).toString()
-        val command_scas_win = resourcesDir + "\\scas " + resourcesDir + "\\temp.txt " + resourcesDir + "\\temp.bin"
-        val command_scwr_win = resourcesDir + "\\scwr " + resourcesDir + "\\temp.bin"
+        val command_scas_win = resourcesDir + "\\scas.exe " + resourcesDir + "\\temp.txt " + resourcesDir + "\\temp.bin"
+        val command_scwr_win = resourcesDir + "\\scwr.exe " + resourcesDir + "\\temp.bin"
         val command_scas = resourcesDir + "/scas " + resourcesDir + "/temp.txt " + resourcesDir + "/temp.bin"
         val command_scwr = resourcesDir + "/scwr " + resourcesDir + "/temp.bin"
 
