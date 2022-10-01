@@ -2,7 +2,6 @@ package window
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -13,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
@@ -59,16 +59,17 @@ fun SCCUIWindow(state: SCCUIWindowState) {
         WindowNotifications(state)
         WindowMenuBar(state)
         Column {
-            Box (modifier = Modifier.background(Color.LightGray).padding(10.dp).border(2.dp, Color.Black).fillMaxWidth().fillMaxHeight(0.961F)) {
+            Box (modifier = Modifier.background(state.backgroundColor).padding(10.dp).border(2.dp, state.borderColor).fillMaxWidth().fillMaxHeight(0.961F)) {
                 Column (modifier = Modifier.padding(10.dp)) {
 
                     //UI element for selecting keyboard (layout)
                     Row {
                         keyboardDropDown(state)
+                        if (state.keyboard != 0) {readButton(state)}
                     }
                     if (state.keyboard != 0) {
                         //UI elements for switching layers and selecting layer keys
-                        Box(modifier = Modifier.border(2.dp, Color.Black).padding(10.dp)) {
+                        Box(modifier = Modifier.border(2.dp, state.borderColor).padding(10.dp)) {
                             Column {
 
                                 Row (modifier = Modifier.fillMaxWidth()) {
@@ -78,7 +79,7 @@ fun SCCUIWindow(state: SCCUIWindowState) {
                                     macroButton(state)
                                 }
                                 Row {
-                                    if (state.layer != 0) {
+                                    if (state.layer != 0 && !state.macroMode) {
                                         for (i in 0..2) { //must be 0-2 not 1-3 !
                                             layerKeyDropDown(state, i + 1, i)
                                         }
@@ -90,43 +91,22 @@ fun SCCUIWindow(state: SCCUIWindowState) {
                         Row(modifier = Modifier.padding(5.dp)) {}
 
                         if (state.macroMode) {
-                            Box(modifier = Modifier.border(2.dp, Color.Black).padding(10.dp).fillMaxWidth()) {
+                            state.layerButtonColor.clear()
+                            state.layerButtonTextColor.clear()
+                            for (i in 0..8) {
+                                state.layerButtonColor.add(state.inactiveButtonColor)
+                                state.layerButtonTextColor.add(state.inactiveButtonTextColor)
+                            }
+
+                            Box(modifier = Modifier.border(2.dp, state.borderColor).padding(10.dp).fillMaxWidth().height(550.dp)) {
                                 //draw macro UI
                                 Row {
                                     //List of all macros
-                                    Column {
+                                    Column (modifier = Modifier.verticalScroll(ScrollState(1), true)) {
                                         macroList(state)
                                     }
-                                    Column {
-                                        //macro name
-                                        macroName(state)
-                                        //key to trigger macro
-                                        //macroTriggerDropdown(state)
-                                        //TODO add meta keys (CTRL, ALT SHIFT, GUI
-
-
-                                        //macro actions (action, key)
-                                        state.macros[state.selectedMacro].actions.forEach() {
-                                            Text(text = it.keyName)
-                                            Text(text = it.action)
-                                        }
-
-                                        //add new action
-                                        Button(
-                                            modifier = Modifier
-                                                .padding(0.dp, 0.dp),
-                                            //.border(0.dp, Color.LightGray, RectangleShape),
-                                            onClick = {
-                                                state.macros[state.selectedMacro].actions.add(MacroAction("", ""))
-                                            },
-                                            shape = RectangleShape,
-                                            elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp)
-                                            //border = ButtonDefaults.outlinedBorder(RectangleShape, 2.dp, Color.Black, Size(5F, 5F)),
-                                            //colors = ButtonDefaults.buttonColors(state.layerButtonColor[layer])
-
-
-                                        ) { Text("+", fontFamily = state.oldFont, fontSize = 30.sp) }
-
+                                    if (state.macroName != "") {
+                                        editMacro(state)
                                     }
                                 }
                             }
@@ -134,11 +114,17 @@ fun SCCUIWindow(state: SCCUIWindowState) {
                             // draw keyboard and keys
                             //state.initKeyboard(0)
 
-                            Box(modifier = Modifier.border(2.dp, Color.Black).padding(10.dp).fillMaxWidth()) {
+                            Box(modifier = Modifier
+                                .border(2.dp, state.borderColor)
+                                .padding(10.dp)
+                                .fillMaxWidth()) {
 
                                 Column(modifier = Modifier.padding(10.dp)) {
 
-                                    Box(modifier = Modifier.background(Color.White).border(2.dp, Color.Black)) {
+                                    Box(modifier = Modifier
+                                        .background(state.backgroundColor)
+                                        //.border(2.dp, state.borderColor)
+                                    ) {
                                         keyboard(state)
                                     }
                                     //UI elements for remapping
@@ -183,13 +169,14 @@ fun SCCUIWindow(state: SCCUIWindowState) {
 
                 }
             }
+            //Status bar
             Box (modifier = Modifier
                 .background(Color(0xFF00AAAA))
                 .fillMaxWidth()
                 .padding(10.dp)
                 //.align(Alignment.Bottom)
             ) {
-                Text(text = state.statusText, color = state.activeButtonTextColor, fontFamily = state.oldFont)
+                Text(text = state.statusText, color = state.textColor, fontFamily = state.oldFont)
             }
         }
 
@@ -232,7 +219,6 @@ fun SCCUIWindow(state: SCCUIWindowState) {
 
 @Composable
 private fun macroList(state: SCCUIWindowState) {
-    var i = 0
     state.macros.forEach() {
         Button(
             modifier = Modifier
@@ -240,7 +226,48 @@ private fun macroList(state: SCCUIWindowState) {
             //.border(0.dp, Color.LightGray, RectangleShape),
             onClick = {
                 state.macroName = it.name
-                state.selectedMacro = i
+                state.selectedMacro = it.index
+                state.triggerKey = it.trigger
+                if (state.mappingKeys.indexOfFirst { mappingskeys -> mappingskeys.name == it.trigger } != -1) {
+                    state.triggerKeyDescription =
+                        state.mappingKeys[state.mappingKeys.indexOfFirst { mappingskeys -> mappingskeys.name == it.trigger }].description
+                } else { state.triggerKeyDescription = "" }
+                for (i in 0 until it.actions.size) {
+                    if (i < state.action.size) {
+                        state.action[i] = it.actions[i].action
+                    } else {
+                        state.action.add(it.actions[i].action)
+                        state.mExpandedAction.add(false)
+                        state.mTextFieldSizeAction.add(Size.Zero)
+                    }
+                    val actionIndex = state.actions.indexOfFirst { actions -> actions.action == it.actions[i].action }
+                    if (actionIndex != -1 && i < state.actionDescription.size) {
+                        state.actionDescription[i] = state.actions[actionIndex].description
+                    } else if (actionIndex != -1 && i >= state.actionDescription.size) {
+                        state.actionDescription.add(state.actions[actionIndex].description)
+                    } else if (actionIndex == -1 && i < state.actionDescription.size) {
+                        state.actionDescription[i] = ""
+                    } else {
+                        state.actionDescription.add("")
+                    }
+                    if (i < state.actionKey.size) {
+                        state.actionKey[i] = it.actions[i].keyName
+                    } else {
+                        state.actionKey.add(it.actions[i].keyName)
+                        state.mExpandedActionKey.add(false)
+                        state.mTextFieldSizeActionKey.add(Size.Zero)
+                    }
+                    val actionKeyIndex = state.mappingKeys.indexOfFirst { mappingskeys -> mappingskeys.name == it.actions[i].keyName }
+                    if (actionKeyIndex != -1 && i < state.actionKeyDescription.size) {
+                        state.actionKeyDescription[i] =
+                            state.mappingKeys[actionKeyIndex].description
+                    } else if (actionKeyIndex != -1 && i >= state.actionKeyDescription.size) {
+                        state.actionKeyDescription.add(state.mappingKeys[actionKeyIndex].description)
+                    } else if (actionKeyIndex == -1 && i < state.actionKeyDescription.size) {
+                        state.actionKeyDescription[i] = ""
+                    } else { state.actionKeyDescription.add("") }
+                }
+                //editMacro(state)
             },
             shape = RectangleShape,
             elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
@@ -249,8 +276,8 @@ private fun macroList(state: SCCUIWindowState) {
 
 
         ) { Text(it.name, fontFamily = state.oldFont, color = state.inactiveButtonTextColor) }
+
     }
-    i++
 
 }
 
@@ -261,17 +288,71 @@ private fun macroName(state: SCCUIWindowState) {
 
         OutlinedTextField(
             value = state.macroName,
-            onValueChange = { state.macroName = it },
-            textStyle = TextStyle(fontFamily = state.oldFont, textAlign = TextAlign.Center),
-            modifier = Modifier.padding(0.dp, 10.dp).border(2.dp, Color.Black, RectangleShape),
+            onValueChange = {
+                if (it.length <= 20) {
+                    state.macroName = it
+                }
+            },
+            singleLine = true,
+            textStyle = TextStyle(fontFamily = state.oldFont, textAlign = TextAlign.Center, color = state.textColor),
+            modifier = Modifier.padding(20.dp, 10.dp).border(2.dp, state.borderColor, RectangleShape),
             //singleline = true
             //label = { Text("Selected Key", fontFamily = FontFamily.Monospace) }
         )
-        Box (modifier = Modifier.padding(75.dp,4.dp)) {
-            Text("Macro Name",  modifier = Modifier.background(state.inactiveButtonColor).padding(10.dp, 0.dp), fontFamily = state.oldFont)
+        Box (modifier = Modifier.padding(110.dp,4.dp)) {
+            Text("Macro Name", color = state.textColor, modifier = Modifier.background(state.inactiveButtonColor).padding(10.dp, 0.dp), fontFamily = state.oldFont)
         }
     }
 }
+
+@Composable
+private fun addActionButton(state: SCCUIWindowState) {
+
+    Box (modifier = Modifier.padding(20.dp, 10.dp)) {
+        Button(
+            modifier = Modifier.padding(10.dp),
+            onClick = {
+
+            },
+            shape = RectangleShape,
+            elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
+            colors = ButtonDefaults.buttonColors(Color.Black)
+        ) {
+            Text(
+                text = "+", fontFamily = state.oldFont, color = Color.Black, fontSize = 30.sp
+            )
+        }
+        Button(
+            modifier = Modifier
+                .padding(0.dp, 0.dp)
+                .background(state.activeButtonColor),
+            //.border(0.dp, Color.LightGray, RectangleShape),
+            onClick = {
+                var index = state.macros[state.selectedMacro].actions.size
+                state.macros[state.selectedMacro].actions.add(MacroAction("", "", index))
+                state.action.add("")
+                state.actionDescription.add("")
+                state.actionKey.add("")
+                state.actionKeyDescription.add("")
+                state.mExpandedAction.add(false)
+                state.mTextFieldSizeAction.add(Size.Zero)
+                state.mExpandedActionKey.add(false)
+                state.mTextFieldSizeActionKey.add(Size.Zero)
+                state.macroMode = false
+                state.macroMode = true
+            },
+            shape = RectangleShape,
+            colors = ButtonDefaults.buttonColors(state.activeButtonColor)
+            //border = ButtonDefaults.outlinedBorder(RectangleShape, 2.dp, Color.Black, Size(5F, 5F)),
+            //colors = ButtonDefaults.buttonColors(state.layerButtonColor[layer])
+
+
+        ) { Text("+", fontFamily = state.oldFont, fontSize = 30.sp, color = state.activeButtonTextColor) }
+    }
+
+
+}
+
 @Composable
 private fun layerButton (state: SCCUIWindowState, layer: Int) {
     Button(
@@ -280,6 +361,13 @@ private fun layerButton (state: SCCUIWindowState, layer: Int) {
             //.border(0.dp, Color.LightGray, RectangleShape),
         onClick = {
             state.macroMode = false
+            state.macroButtonColor = state.inactiveButtonColor
+            state.macroButtonTextColor = state.inactiveButtonTextColor
+            if (layer == 0) {
+                state.statusText = "Click on a key to map it to another."
+            } else {
+                state.statusText = "Select 1, 2 or 3 keys to access the layer. And then click on a key to map it to another."
+            }
             for (i in 0..8) {
                 if (i != layer) {
                     state.layerButtonColor[i] = state.inactiveButtonColor
@@ -326,17 +414,19 @@ private fun macroButton (state: SCCUIWindowState) {
             .padding(0.dp, 0.dp),
         //.border(0.dp, Color.LightGray, RectangleShape),
         onClick = {
-            state.statusText = "Not implemented yet."
+            state.statusText = "Click on a macro on the left to edit it."
             state.macroMode = true
+            state.macroButtonColor = state.activeButtonColor
+            state.macroButtonTextColor = state.activeButtonTextColor
 
         },
         shape = RectangleShape,
         elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
         //border = ButtonDefaults.outlinedBorder(RectangleShape, 2.dp, Color.Black, Size(5F, 5F)),
-        colors = ButtonDefaults.buttonColors(state.inactiveButtonColor)
+        colors = ButtonDefaults.buttonColors(state.macroButtonColor)
 
 
-    ) { Text("Macros", fontFamily = state.oldFont, color = state.inactiveButtonTextColor ) }
+    ) { Text("Macros", fontFamily = state.oldFont, color = state.macroButtonTextColor ) }
 
 
 }
@@ -392,7 +482,7 @@ private fun keyboard(state: SCCUIWindowState) {
                         ) {
                             Text(
                                 text = if (it.label != "  ") {
-                                    it.label + if (it.mapTo[state.layer] != null) { "\r\n" + "> " + it.mapTo[state.layer] } else {""}
+                                    it.label + if (it.mapTo[state.layer] != null) { " > " + it.mapTo[state.layer] } else {""}
                                 } else {
                                     it.name
                                 },
@@ -436,13 +526,13 @@ private fun selectedKey(state: SCCUIWindowState) {
         OutlinedTextField(
             value = state.label,
             onValueChange = { state.label = it },
-            textStyle = TextStyle(fontFamily = state.oldFont, textAlign = TextAlign.Center),
-            modifier = Modifier.padding(0.dp, 10.dp).border(2.dp, Color.Black, RectangleShape),
+            textStyle = TextStyle(fontFamily = state.oldFont, textAlign = TextAlign.Center, color = state.textColor),
+            modifier = Modifier.padding(0.dp, 10.dp).border(2.dp, state.borderColor, RectangleShape),
             //singleline = true
             //label = { Text("Selected Key", fontFamily = FontFamily.Monospace) }
         )
         Box (modifier = Modifier.padding(75.dp,4.dp)) {
-            Text("Selected Key",  modifier = Modifier.background(state.inactiveButtonColor).padding(10.dp, 0.dp), fontFamily = state.oldFont)
+            Text("Selected Key", color = state.textColor, modifier = Modifier.background(state.inactiveButtonColor).padding(10.dp, 0.dp), fontFamily = state.oldFont)
         }
     }
 }
@@ -450,12 +540,6 @@ private fun selectedKey(state: SCCUIWindowState) {
 private fun mapToDropDown(state: SCCUIWindowState){
 
     val no = 0
-    // Up Icon when expanded and down icon when collapsed
-    val icon = if (state.mExpanded[no])
-        Icons.Filled.KeyboardArrowUp
-    else
-        Icons.Filled.KeyboardArrowDown
-
     //val focusRequester = remember { FocusRequester() }
     Box {
     Column (modifier = Modifier.padding(20.dp, 10.dp)) {
@@ -469,7 +553,6 @@ private fun mapToDropDown(state: SCCUIWindowState){
                 state.mappingKeysDropDown = state.mappingKeys
                 state.foundMappingKeys = mutableStateListOf(state.mappingKeys[0])
                 state.mapToDescription = it
-                var i = 0
                 state.mappingKeysDropDown.forEach() { mappingKey ->
                     if (mappingKey.description.contains(it, ignoreCase = true) && mappingKey.name != "NOMAPPING") {
                         //println(mappingKey.description)
@@ -477,7 +560,6 @@ private fun mapToDropDown(state: SCCUIWindowState){
                     }
                     state.mappingKeysDropDown = state.foundMappingKeys
                 }
-                i++
                 state.mExpanded[no] = true
                 //delay(100)
                 //focusRequester.requestFocus()
@@ -489,14 +571,14 @@ private fun mapToDropDown(state: SCCUIWindowState){
                     state.mExpanded[no] = it.hasFocus
                     state.mappingKeysDropDown = state.mappingKeys
                 }
-                .border(2.dp, Color.Black, RectangleShape)
+                .border(2.dp, state.borderColor, RectangleShape)
                 .onGloballyPositioned { coordinates ->
                     // This value is used to assign to
                     // the DropDown the same width
                     state.mTextFieldSize[no] = coordinates.size.toSize()
                 },
             //label = {Text("Select key to map to")},
-            textStyle = TextStyle(color = Color.Black, fontFamily = state.oldFont, textAlign = TextAlign.Center),
+            textStyle = TextStyle(color = state.textColor, fontFamily = state.oldFont, textAlign = TextAlign.Center),
             /*trailingIcon = {
                 Icon(icon,"contentDescription",
                     Modifier.clickable { state.mExpanded[no] = !state.mExpanded[no] })
@@ -512,7 +594,6 @@ private fun mapToDropDown(state: SCCUIWindowState){
             modifier = Modifier.width(with(LocalDensity.current) { state.mTextFieldSize[no].width.toDp() })
                 .height(400.dp)
         ) {
-            var i = 0
             state.mappingKeysDropDown.forEach {
                 DropdownMenuItem(onClick = {
                     state.mapToDescription = it.description
@@ -525,11 +606,143 @@ private fun mapToDropDown(state: SCCUIWindowState){
                     )
                 }
             }
-            i++
         }
     }
         Box (modifier = Modifier.padding(55.dp,4.dp)) {
-            Text("Select key to map to",  modifier = Modifier.background(state.inactiveButtonColor).padding(10.dp, 0.dp), fontFamily = state.oldFont)
+            Text("Select key to map to", color = state.textColor, modifier = Modifier.background(state.inactiveButtonColor).padding(10.dp, 0.dp), fontFamily = state.oldFont)
+        }
+
+    }
+}
+
+
+@Composable
+private fun editMacro(state: SCCUIWindowState) {
+    Column (modifier = Modifier.verticalScroll(ScrollState(1), true)) {
+        Row {
+            macroName(state)
+            triggerKeyDropdown(state)
+            saveMacroButton(state)
+        }
+        //key to trigger macro
+        //macroTriggerDropdown(state)
+        //TODO add meta keys (CTRL, ALT SHIFT, GUI
+
+        //macro actions (action, key)
+
+        state.macros[state.selectedMacro].actions.forEach() {
+            Row {
+                actionDropdown(state, it.index)
+                actionKeyDropdown(state, it.index)
+            }
+        }
+
+        //add new action
+        addActionButton(state)
+    }
+
+}
+
+@Composable
+private fun saveMacroButton(state: SCCUIWindowState) {
+    Box (modifier = Modifier.padding(0.dp, 10.dp)) {
+        Button(
+            modifier = Modifier.padding(10.dp),
+            onClick = {
+
+            },
+            shape = RectangleShape,
+            elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
+            colors = ButtonDefaults.buttonColors(Color.Black)
+        ) {
+            Text(
+                text = "Save", fontFamily = state.oldFont, color = Color.Black
+            )
+        }
+        Button(
+            modifier = Modifier.padding(0.dp),
+            onClick = { state.saveMacroButtonPressed() },
+            shape = RectangleShape,
+            colors = ButtonDefaults.buttonColors(state.activeButtonColor)
+        ) { Text("Save", fontFamily = state.oldFont, color = state.activeButtonTextColor) }
+    }
+}
+
+
+@Composable
+private fun triggerKeyDropdown(state: SCCUIWindowState){
+
+    var no = 5
+
+    //val focusRequester = remember { FocusRequester() }
+    Box {
+        Column (modifier = Modifier.padding(20.dp, 10.dp)) {
+
+            // Create an Outlined Text Field
+            // with icon and not expanded
+            OutlinedTextField(
+                value = state.triggerKeyDescription,
+                onValueChange = {
+                    state.mappingKeysDropDown = state.mappingKeys
+                    state.foundMappingKeys = mutableStateListOf(state.mappingKeys[0])
+                    state.triggerKeyDescription = it
+                    state.mappingKeysDropDown.forEach() { mappingKey ->
+                        if (mappingKey.description.contains(it, ignoreCase = true) && mappingKey.name != "NOMAPPING") {
+                            //println(mappingKey.description)
+                            state.foundMappingKeys.add(mappingKey)
+                        }
+                        state.mappingKeysDropDown = state.foundMappingKeys
+                    }
+                    state.mExpanded[no] = true
+                    //delay(100)
+                    //focusRequester.requestFocus()
+                },
+                modifier = Modifier
+                    //.fillMaxWidth()
+                    //.focusRequester(focusRequester)
+                    .onFocusChanged {
+                        state.mExpanded[no] = it.hasFocus
+                        state.mappingKeysDropDown = state.mappingKeys
+                    }
+                    .border(2.dp, state.borderColor, RectangleShape)
+                    .onGloballyPositioned { coordinates ->
+                        // This value is used to assign to
+                        // the DropDown the same width
+                        state.mTextFieldSize[no] = coordinates.size.toSize()
+                    },
+                //label = {Text("Select key to map to")},
+                textStyle = TextStyle(color = state.textColor, fontFamily = state.oldFont, textAlign = TextAlign.Center),
+                /*trailingIcon = {
+                    Icon(icon,"contentDescription",
+                        Modifier.clickable { state.mExpanded[no] = !state.mExpanded[no] })
+                }*/
+            )
+
+            // Create a drop-down menu with list of keys,
+            // when clicked, set the Text Field text as the key selected
+            DropdownMenu(
+                focusable = false,
+                expanded = state.mExpanded[no],
+                onDismissRequest = { state.mExpanded[no] = false },
+                modifier = Modifier.width(with(LocalDensity.current) { state.mTextFieldSize[no].width.toDp() })
+                    .height(400.dp)
+            ) {
+                state.mappingKeysDropDown.forEach {
+                    DropdownMenuItem(onClick = {
+                        state.triggerKeyDescription = it.description
+                        state.triggerKey = it.name
+                        state.mExpanded[no] = false
+                    }
+                    ) {
+                        Text(
+                            text = it.description, fontFamily = state.oldFont//, fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+        }
+        Box (modifier = Modifier.padding(35.dp,4.dp)) {
+            Text("Select key to trigger macro", color = state.textColor, modifier = Modifier.background(state.inactiveButtonColor).padding(10.dp, 0.dp), fontFamily = state.oldFont)
         }
 
     }
@@ -538,14 +751,156 @@ private fun mapToDropDown(state: SCCUIWindowState){
 
 
 @Composable
+private fun actionDropdown(state: SCCUIWindowState, macroActionNumber: Int) {
+
+    //val focusRequester = remember { FocusRequester() }
+    Box {
+        Column (modifier = Modifier.padding(20.dp, 10.dp)) {
+
+            // Create an Outlined Text Field
+            // with icon and not expanded
+            OutlinedTextField(
+                value = state.actionDescription[macroActionNumber],
+                onValueChange = {
+                    state.actionDescription[macroActionNumber] = it
+                },
+                modifier = Modifier
+                    //.fillMaxWidth()
+                    //.focusRequester(focusRequester)
+                    .onFocusChanged {
+                        state.mExpandedAction[macroActionNumber] = it.hasFocus
+                        //state.mappingKeysDropDown = state.mappingKeys
+                    }
+                    .border(2.dp, state.borderColor, RectangleShape)
+                    .onGloballyPositioned { coordinates ->
+                        // This value is used to assign to
+                        // the DropDown the same width
+                        state.mTextFieldSizeAction[macroActionNumber] = coordinates.size.toSize()
+                    },
+                //label = {Text("Select key to map to")},
+                textStyle = TextStyle(color = state.textColor, fontFamily = state.oldFont, textAlign = TextAlign.Center),
+                /*trailingIcon = {
+                    Icon(icon,"contentDescription",
+                        Modifier.clickable { state.mExpanded[no] = !state.mExpanded[no] })
+                }*/
+            )
+
+            // Create a drop-down menu with list of keys,
+            // when clicked, set the Text Field text as the key selected
+            DropdownMenu(
+                focusable = false,
+                expanded = state.mExpandedAction[macroActionNumber],
+                onDismissRequest = { state.mExpandedAction[macroActionNumber] = false },
+                modifier = Modifier.width(with(LocalDensity.current) { state.mTextFieldSizeAction[macroActionNumber].width.toDp() })
+                    .height(400.dp)
+            ) {
+                state.actions.forEach {
+                    DropdownMenuItem(onClick = {
+                        state.action[macroActionNumber] = it.action
+                        state.actionDescription[macroActionNumber] = it.description
+                        state.mExpandedAction[macroActionNumber] = false
+                    }
+                    ) {
+                        Text(
+                            text = it.description, fontFamily = state.oldFont//, fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+        }
+        Box (modifier = Modifier.padding(95.dp,4.dp)) {
+            Text("Select action", color = state.textColor, modifier = Modifier.background(state.inactiveButtonColor).padding(10.dp, 0.dp), fontFamily = state.oldFont)
+        }
+
+    }
+}
+
+
+@Composable
+private fun actionKeyDropdown(state: SCCUIWindowState, macroActionNumber: Int){
+
+    //val focusRequester = remember { FocusRequester() }
+    Box {
+        Column (modifier = Modifier.padding(20.dp, 10.dp)) {
+
+            // Create an Outlined Text Field
+            // with icon and not expanded
+            OutlinedTextField(
+                value = state.actionKeyDescription[macroActionNumber],
+                onValueChange = {
+
+                    state.mappingKeysDropDown = state.mappingKeys
+                    state.foundMappingKeys = mutableStateListOf(state.mappingKeys[0])
+                    state.actionKeyDescription[macroActionNumber] = it
+                    state.mappingKeysDropDown.forEach() { mappingKey ->
+                        if (mappingKey.description.contains(it, ignoreCase = true) && mappingKey.name != "NOMAPPING") {
+                            //println(mappingKey.description)
+                            state.foundMappingKeys.add(mappingKey)
+                        }
+                        state.mappingKeysDropDown = state.foundMappingKeys
+                    }
+                    state.mExpandedActionKey[macroActionNumber] = true
+                    //delay(100)
+                    //focusRequester.requestFocus()
+                },
+                modifier = Modifier
+                    //.fillMaxWidth()
+                    //.focusRequester(focusRequester)
+                    .onFocusChanged {
+                        state.mExpandedActionKey[macroActionNumber] = it.hasFocus
+                        state.mappingKeysDropDown = state.mappingKeys
+                    }
+                    .border(2.dp, state.borderColor, RectangleShape)
+                    .onGloballyPositioned { coordinates ->
+                        // This value is used to assign to
+                        // the DropDown the same width
+                        state.mTextFieldSizeActionKey[macroActionNumber] = coordinates.size.toSize()
+                    },
+                //label = {Text("Select key to map to")},
+                textStyle = TextStyle(color = state.textColor, fontFamily = state.oldFont, textAlign = TextAlign.Center),
+                /*trailingIcon = {
+                    Icon(icon,"contentDescription",
+                        Modifier.clickable { state.mExpanded[no] = !state.mExpanded[no] })
+                }*/
+            )
+
+            // Create a drop-down menu with list of keys,
+            // when clicked, set the Text Field text as the key selected
+            DropdownMenu(
+                focusable = false,
+                expanded = state.mExpandedActionKey[macroActionNumber],
+                onDismissRequest = { state.mExpandedActionKey[macroActionNumber] = false },
+                modifier = Modifier.width(with(LocalDensity.current) { state.mTextFieldSizeActionKey[macroActionNumber].width.toDp() })
+                    .height(400.dp)
+            ) {
+                state.mappingKeysDropDown.forEach {
+                    DropdownMenuItem(onClick = {
+                        state.actionKeyDescription[macroActionNumber] = it.description
+                        state.actionKey[macroActionNumber] = it.name
+                        state.mExpandedActionKey[macroActionNumber] = false
+                    }
+                    ) {
+                        Text(
+                            text = it.description, fontFamily = state.oldFont//, fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+        }
+        Box (modifier = Modifier.padding(105.dp,4.dp)) {
+            Text("Select key", color = state.textColor, modifier = Modifier.background(state.inactiveButtonColor).padding(10.dp, 0.dp), fontFamily = state.oldFont)
+        }
+
+    }
+}
+
+
+
+
+
+@Composable
 private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: Int) {
 
-
-    // Up Icon when expanded and down icon when collapsed
-    val icon = if (state.mExpanded[index])
-        Icons.Filled.KeyboardArrowUp
-    else
-        Icons.Filled.KeyboardArrowDown
     Box {
         Column(modifier = Modifier.padding(10.dp)) {
 
@@ -557,7 +912,6 @@ private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: In
                     state.layerKeyDescriptionTemp[layerKeyNo] = it
                     state.mappingKeysDropDown = state.mappingKeys
                     state.foundMappingKeys = mutableStateListOf(state.mappingKeys[0])
-                    var i = 0
                     state.mappingKeysDropDown.forEach() { mappingKey ->
                         if (mappingKey.description.contains(it, ignoreCase = true) && mappingKey.name != "NOMAPPING") {
                             //println(mappingKey.description)
@@ -565,7 +919,6 @@ private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: In
                         }
                         state.mappingKeysDropDown = state.foundMappingKeys
                     }
-                    i++
                     state.mExpanded[index] = true
                 },
                 modifier = Modifier
@@ -573,14 +926,14 @@ private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: In
                         state.mExpanded[index] = it.hasFocus
                         state.mappingKeysDropDown = state.mappingKeys
                     }
-                    .border(2.dp, Color.Black, RectangleShape)
+                    .border(2.dp, state.borderColor, RectangleShape)
                     .onGloballyPositioned { coordinates ->
                         // This value is used to assign to
                         // the DropDown the same width
                         state.mTextFieldSize[index] = coordinates.size.toSize()
                     },
                 //label = {Text("Select key(s) to access layer")},
-                textStyle = TextStyle(color = Color.Black, fontFamily = state.oldFont, textAlign = TextAlign.Center),
+                textStyle = TextStyle(color = state.textColor, fontFamily = state.oldFont, textAlign = TextAlign.Center),
             )
 
             // Create a drop-down menu with list of keys,
@@ -606,6 +959,7 @@ private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: In
         Box(modifier = Modifier.padding(25.dp, 4.dp)) {
             Text(
                 "Select key to access layer",
+                color = state.textColor,
                 modifier = Modifier.background(state.inactiveButtonColor).padding(10.dp, 0.dp),
                 fontFamily = state.oldFont
             )
@@ -695,16 +1049,47 @@ private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: In
 
     }
 
+@Composable
+private fun readButton(state: SCCUIWindowState) {
+    Box {
+        Button(
+            modifier = Modifier.padding(30.dp, 10.dp),
+            onClick = {                },
+            shape = RectangleShape,
+            elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
+            colors = ButtonDefaults.buttonColors(Color.Black)
+        ) {
+            Text(
+                text = "Read Soarer's Converter", fontFamily = state.oldFont, color = Color.Black
+            )
+        }
+        Button(
+            modifier = Modifier.padding(20.dp, 0.dp),
+            onClick = { state.read() },
+            shape = RectangleShape,
+            elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
+            colors = ButtonDefaults.buttonColors(state.activeButtonColor)
+        ) {
+            Text(
+                "Read Soarer's Converter",
+                fontFamily = state.oldFont,
+                color = state.activeButtonTextColor
+            )
+        }
+
+    }
+
+}
+
+    @OptIn(ExperimentalFoundationApi::class)
     @Composable
     private fun keyboardDropDown(state: SCCUIWindowState) {
 
         val no = 4
-        // Up Icon when expanded and down icon when collapsed
         val icon = if (state.mExpanded[no])
             Icons.Filled.KeyboardArrowUp
         else
             Icons.Filled.KeyboardArrowDown
-
         Column(modifier = Modifier.padding(0.dp)) {
 
             // Create an Outlined Text Field
@@ -716,23 +1101,28 @@ private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: In
                 },
                 modifier = Modifier
                     //.fillMaxWidth()
-                    .border(2.dp, Color.Black, RectangleShape)
+                    .onFocusChanged {
+                        state.mExpanded[no] = it.hasFocus
+                        //state.mappingKeysDropDown = state.mappingKeys
+                    }.border(2.dp, state.borderColor, RectangleShape)
                     .onGloballyPositioned { coordinates ->
                         // This value is used to assign to
                         // the DropDown the same width
                         state.mTextFieldSize[no] = coordinates.size.toSize()
                     },
                 //label = {Text("Select keyboard", fontFamily = FontFamily.Monospace, color = Color.Black, textAlign = TextAlign.Center)},
-                textStyle = TextStyle(color = Color.Black, fontFamily = state.oldFont),
+                textStyle = TextStyle(color = state.textColor, fontFamily = state.oldFont),
                 trailingIcon = {
                     Icon(icon, "contentDescription",
                         Modifier.clickable { state.mExpanded[no] = !state.mExpanded[no] })
                 }
             )
 
+
             // Create a drop-down menu with list of keys,
             // when clicked, set the Text Field text as the key selected
             DropdownMenu(
+                focusable = false,
                 expanded = state.mExpanded[no],
                 onDismissRequest = { state.mExpanded[no] = false },
                 modifier = Modifier.width(with(LocalDensity.current) { state.mTextFieldSize[no].width.toDp() })
@@ -741,6 +1131,7 @@ private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: In
                     DropdownMenuItem(onClick = {
                         state.keyboard = it.index
                         state.initKeyboard(state.keyboard)
+                        state.statusText = "Click on a key to map it to another."
                         state.mExpanded[no] = false
                     }) {
                         Text(
@@ -751,6 +1142,9 @@ private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: In
             }
             Row(modifier = Modifier.padding(5.dp)) {}
         }
+
+
+
     }
 
 
@@ -787,12 +1181,12 @@ private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: In
         fun save() = scope.launch { state.save() }
         fun open() = scope.launch { state.open() }
         fun exit() = scope.launch { state.exit() }
-        fun read() = scope.launch { state.read() }
+        //fun read() = scope.launch { state.read() }
 
         Menu("File") {
             Item("New window", onClick = state::newWindow)
             Item("Open file...", onClick = { open() })
-            Item("Read config from converter", onClick = { read() })
+            //Item("Read config from converter", onClick = { read() })
             Item("Save", onClick = { save() }, enabled = state.isChanged || state.path == null)
             Separator()
             Item("Exit", onClick = { exit() })

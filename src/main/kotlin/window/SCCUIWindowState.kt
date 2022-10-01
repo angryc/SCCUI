@@ -53,12 +53,20 @@ data class MappingKey(
 
 data class Macro(
     var name: String,
+    var trigger: String,
+    var index: Int,
     val actions: MutableList<MacroAction>
 )
 
 data class MacroAction(
     var keyName: String,
-    val action: String
+    var action: String,
+    var index: Int
+)
+
+data class Actions(
+    var action: String,
+    val description: String
 )
 
 
@@ -79,24 +87,27 @@ class SCCUIWindowState(
     val defaultWidth = 40.dp
     val defaultHeight = 40.dp
 
-    var mExpanded = mutableStateListOf(false, false, false, false, false)
-    var mTextFieldSize = mutableStateListOf(Size.Zero, Size.Zero, Size.Zero, Size.Zero, Size.Zero)
+    var mExpanded = mutableStateListOf(false, false, false, false, false, false, false)
+    var mTextFieldSize = mutableStateListOf(Size.Zero, Size.Zero, Size.Zero, Size.Zero, Size.Zero, Size.Zero, Size.Zero)
 
-     var statusText by mutableStateOf("")
+    var statusText by mutableStateOf("")
 
-    val activeButtonTextColor = Color.White
-    val inactiveButtonTextColor = Color.DarkGray
-    val activeButtonColor = Color(0xFF0000AA)
-    val inactiveButtonColor = Color.LightGray
+    val activeButtonTextColor = Color.Black //Color.White
+    val inactiveButtonTextColor = Color.LightGray
+    val activeButtonColor = Color.LightGray //Color(0xFF0000AA)
+    val inactiveButtonColor = Color(0xFF0000AA) //Color.LightGray
+    val backgroundColor = Color(0xFF0000AA) //Color.LightGray
+    val borderColor = Color.LightGray
+    val textColor = Color.LightGray
 
     val oldFont = FontFamily.Monospace
-    /*val oldFont = FontFamily(
+    /*var oldFont = FontFamily(
         Font(
-            resource = File(System.getProperty("compose.application.resources.dir")).toString()+ "/VT323-Regular.ttf",
+            //resource = File(System.getProperty("compose.application.resources.dir")).toString()+ "/VT323-Regular.ttf",
             //resource = "fonts/ModernDOS8x14.ttf",
             //resource = "VT323-Regular.ttf",
-            //resource = "fonts/Perfect DOS VGA 437.ttf",
-            weight = FontWeight.Normal,
+            resource = "fonts/Perfect DOS VGA 437.ttf",
+            weight = FontWeight.W400,
             style = FontStyle.Normal
         )
     )*/
@@ -135,6 +146,7 @@ class SCCUIWindowState(
             filePath = resourcesDir + "/temp.txt"
         }
         //println(filePath)
+        statusText = "Config was read."
         open(Paths.get(filePath))
 
     }
@@ -147,6 +159,9 @@ class SCCUIWindowState(
         this.path = path
         var remapBlockFound = false
         var layerBlockFound = false
+        var macroBlockFound = false
+        var macroIndex = 0
+        var macroActionIndex = 0
         var firstLine = false
         try {
             _input = path.readLines(Charset.defaultCharset())
@@ -156,6 +171,7 @@ class SCCUIWindowState(
                 if (it.contains("endblock", ignoreCase = true)) {
                     remapBlockFound = false
                     layerBlockFound = false
+                    macroBlockFound = false
                 } else if (remapBlockFound) {
                     val s = it.trim().split(" ")
                     if (firstLine) { //first line after "remapblock" can be a layer information, but has to default to layer 0 if omitted
@@ -189,11 +205,40 @@ class SCCUIWindowState(
                         }
 
                     }
+                } else if (macroBlockFound) {
+                    val s = it.trim().split(" ")
+                    println(s)
+                    if (s[0] == "endmacro") {
+                        println("macro ended")
+                        macroIndex++
+                        macroActionIndex = 0
+                    } else if (s[0] == "macro") {
+                        println("found macro")
+                        var trigger = s[1]
+                        var name = "No Name"
+                        /*if (s[2] != "") {
+                            name = s[2].replace("#", "")
+                        }*/
+                        macros.add(Macro(name, trigger, macroIndex, mutableListOf(MacroAction("", "", 0))))
+                        macros[macroIndex].actions.clear()
+                    } else if (s[0] == "#") {
+                    } else {
+                        var keyName = s[1]
+                        var action = s[0]
+                        if (action == "SET_META") { action = "MAKE" }
+                        else if (action == "CLEAR_META") { action = "BREAK" }
+                        //println(keyName + " " + action)
+                        macros[macroIndex].actions.add(MacroAction(keyName, action, macroActionIndex))
+                        macroActionIndex++
+                    }
                 } else if (it.contains("remapblock", ignoreCase = true)) {
                     remapBlockFound = true
                     firstLine = true
                 } else if (it.contains("layerblock", ignoreCase = true)) {
                     layerBlockFound = true
+                } else if (it.contains("macroblock", ignoreCase = true)) {
+                    macroBlockFound = true
+                    macros.clear()
                 }
             }
             layer = 0 //set layer to default layer
@@ -349,17 +394,63 @@ class SCCUIWindowState(
 
 
     var macroMode by mutableStateOf(false)
-    var macros = mutableStateListOf(Macro("New", mutableListOf(MacroAction("", ""))))
-    val actions = listOf("PRESS", "MAKE", "BREAK")
+    var macros = mutableStateListOf(Macro("New", "", 0, mutableListOf(MacroAction("", "", 0))))
+    val actions = listOf(Actions("PRESS", "Press down & let go"), Actions("MAKE", "Press down & hold"), Actions("BREAK", "Let go"))
 
     //temp
+    var macroButtonColor by mutableStateOf(inactiveButtonColor)
+    var macroButtonTextColor by mutableStateOf(inactiveButtonTextColor)
     var selectedMacro by mutableStateOf(0)
     var macroName by mutableStateOf("")
     var triggerKey by mutableStateOf("")
-    var action by mutableStateOf("")
+    var triggerKeyDescription by mutableStateOf("")
+    var action = mutableStateListOf("")
+    var actionDescription = mutableStateListOf("")
+    var actionKey = mutableStateListOf("")
+    var actionKeyDescription = mutableStateListOf("")
+
+    var mExpandedAction = mutableStateListOf(false)
+    var mTextFieldSizeAction = mutableStateListOf(Size.Zero)
+    var mExpandedActionKey = mutableStateListOf(false)
+    var mTextFieldSizeActionKey = mutableStateListOf(Size.Zero)
+
+    fun saveMacroButtonPressed() {
+        if (triggerKey != "") {
+            macros[selectedMacro].name = macroName
+            macros[selectedMacro].trigger = triggerKey
+            macros[selectedMacro].actions.clear()
+            for (i in 0 until action.size) {
+                macros[selectedMacro].actions.add(MacroAction(actionKey[i], action[i], i))
+            }
+            statusText = "Macro saved."
+        } else {
+            statusText = "Please fill all fields before you save."
+        }
+        if (macros[macros.size-1].trigger != "") {
+            macros.add(Macro("New", "", macros.size, mutableListOf(MacroAction("", "", 0))))
+        }
+        updateMacroblockOutput()
+    }
 
 
+    private fun updateMacroblockOutput() {
 
+        macroblockOutput = "macroblock\r\n"
+        macros.forEach() {
+            if (it.trigger != "") {
+                macroblockOutput += "macro " + it.trigger + " #" + it.name + "\r\n"
+                it.actions.forEach() {
+                    if (it.action != "" && it.keyName != "") {
+                        macroblockOutput += "  " + it.action + " " + it.keyName + "\r\n"
+                    }
+                }
+                macroblockOutput += "endmacro\r\n"
+            }
+        }
+        macroblockOutput += "endblock"
+        println(macroblockOutput)
+        updateOutput()
+    }
 
 
 
@@ -557,7 +648,7 @@ class SCCUIWindowState(
             }
             i++
         }
-        output += macroblockOutput
+        output += "\r\n\r\n" + macroblockOutput
         //println(output)
     }
 
@@ -578,11 +669,13 @@ class SCCUIWindowState(
             commandLine = withContext(Dispatchers.IO) {
                 Runtime.getRuntime().exec(command_scas_win)
             }.toString()
+            statusText = "Created binary file for flashing."
             scope.launch {
                 if (askToFlash()) {
                     commandLine = withContext(Dispatchers.IO) {
                         Runtime.getRuntime().exec(command_scwr_win)
                     }.toString()
+                    statusText = "Soarer's Converter flashed."
                 }
             }
 
@@ -590,11 +683,13 @@ class SCCUIWindowState(
             commandLine = withContext(Dispatchers.IO) {
                 Runtime.getRuntime().exec(command_scas)
             }.toString()
+            statusText = "Created binary file for flashing."
             scope.launch {
                 if (askToFlash()) {
                     commandLine = withContext(Dispatchers.IO) {
                         Runtime.getRuntime().exec(command_scwr)
                     }.toString()
+                    statusText = "Soarer's Converter flashed."
                 }
 
             }

@@ -38,25 +38,3 @@ compose.desktop {
         }
     }
 }
-/*
-kotlin {
-    sourceSets {
-        val okioVersion = "3.3.0-SNAPSHOT"
-        val commonMain by getting {
-            dependencies {
-                implementation("com.squareup.okio:okio:$okioVersion")
-            }
-        }
-        val jsMain by getting {
-            dependencies {
-                implementation("com.squareup.okio:okio-nodefilesystem:$okioVersion")
-            }
-        }
-        val commonTest by getting {
-            dependencies {
-                implementation("com.squareup.okio:okio-fakefilesystem:$okioVersion")
-            }
-        }
-    }
-}
-*/
