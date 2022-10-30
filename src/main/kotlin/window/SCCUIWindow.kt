@@ -65,27 +65,72 @@ fun SCCUIWindow(state: SCCUIWindowState) {
                     //UI element for selecting keyboard (layout)
                     Row {
                         keyboardDropDown(state)
-                        if (state.keyboard != 0) {readButton(state)}
+                        if (state.keyboard != 0) {
+                            readButton(state)
+                            Column {
+                                Row {
+                                    //checkboxAndText(state, state.checkedConfigState, "Show Alternative Configs")
+                                    Checkbox(
+                                        checked = state.checkedConfigState,
+                                        onCheckedChange = { state.checkedConfigState = it },
+                                        //modifier = Modifier.padding(0.dp, 0.dp),
+                                        colors = CheckboxDefaults.colors(
+                                            checkedColor = state.backgroundColor,
+                                            uncheckedColor = state.borderColor,
+                                        )
+                                    )
+                                    Text(text = "Show Alternative Configs", color = state.textColor, fontFamily = state.oldFont, modifier = Modifier.padding(0.dp, 18.dp))
+                                }
+                                Row {
+                                    Checkbox(
+                                        checked = state.checkedLayerState,
+                                        onCheckedChange = { state.checkedLayerState = it },
+                                        colors = CheckboxDefaults.colors(
+                                            checkedColor = state.backgroundColor,
+                                            uncheckedColor = state.borderColor
+                                        )
+                                    )
+                                    Text(text = "Show Layers", color = state.textColor, fontFamily = state.oldFont, modifier = Modifier.padding(0.dp, 18.dp))
+                                    Checkbox(
+                                        checked = state.checkedMacroState,
+                                        onCheckedChange = { state.checkedMacroState = it },
+                                        //modifier = Modifier.border(2.dp, state.textColor, RectangleShape),
+                                        colors = CheckboxDefaults.colors(
+                                            checkedColor = state.backgroundColor,
+                                            uncheckedColor = state.borderColor
+                                        )
+                                    )
+                                    Text(text = "Show Macros", color = state.textColor, fontFamily = state.oldFont, modifier = Modifier.padding(0.dp, 18.dp))
+                                }
+                            }
+                        }
                     }
                     if (state.keyboard != 0) {
                         //UI elements for switching layers and selecting layer keys
-                        Box(modifier = Modifier.border(2.dp, state.borderColor).padding(10.dp)) {
-                            Column {
-
-                                Row (modifier = Modifier.fillMaxWidth()) {
-                                    for (i in 0..8) {
-                                        layerButton(state, i)
-                                    }
-                                    macroButton(state)
-                                }
-                                Row {
-                                    if (state.layer != 0 && !state.macroMode) {
-                                        for (i in 0..2) { //must be 0-2 not 1-3 !
-                                            layerKeyDropDown(state, i + 1, i)
+                        if (state.checkedLayerState || state.checkedMacroState) {
+                            Box(modifier = Modifier.border(2.dp, state.borderColor).padding(10.dp)) {
+                                Column {
+                                    Row(modifier = Modifier.fillMaxWidth()) {
+                                        layerButton(state, 0)
+                                        if (state.checkedLayerState) {
+                                            for (i in 1..8) {
+                                                layerButton(state, i)
+                                            }
                                         }
-                                        applyLayerKeyButton(state)
+                                        if (state.checkedMacroState) {
+                                            macroButton(state)
+                                        }
+                                    }
+                                    Row {
+                                        if (state.layer != 0 && !state.macroMode) {
+                                            for (i in 0..2) { //must be 0-2 not 1-3 !
+                                                layerKeyDropDown(state, i + 1, i)
+                                            }
+                                            applyLayerKeyButton(state)
+                                        }
                                     }
                                 }
+
                             }
                         }
                         Row(modifier = Modifier.padding(5.dp)) {}
@@ -215,6 +260,21 @@ fun SCCUIWindow(state: SCCUIWindowState) {
         }
     }
 }
+
+/*
+@Composable
+private fun checkboxAndText(state: SCCUIWindowState, checkedConfigState: Boolean, s: String) {
+    Checkbox(
+        checked = checkedConfigState,
+        onCheckedChange = { checkedConfigState = it },
+        //modifier = Modifier.padding(0.dp, 0.dp),
+        colors = CheckboxDefaults.colors(
+            checkedColor = state.backgroundColor,
+            uncheckedColor = state.borderColor,
+        )
+    )
+    Text(text = s, color = state.textColor, fontFamily = state.oldFont, modifier = Modifier.padding(0.dp, 18.dp))
+}*/
 
 
 @Composable
@@ -622,14 +682,11 @@ private fun editMacro(state: SCCUIWindowState) {
         Row {
             macroName(state)
             triggerKeyDropdown(state)
+            //triggerMetasDropdown(state)
             saveMacroButton(state)
         }
-        //key to trigger macro
-        //macroTriggerDropdown(state)
-        //TODO add meta keys (CTRL, ALT SHIFT, GUI
 
         //macro actions (action, key)
-
         state.macros[state.selectedMacro].actions.forEach() {
             Row {
                 actionDropdown(state, it.index)

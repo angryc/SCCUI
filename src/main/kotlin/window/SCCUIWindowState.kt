@@ -83,7 +83,7 @@ class SCCUIWindowState(
     private var _notifications = Channel<NotepadWindowNotification>(0)
     val notifications: Flow<NotepadWindowNotification> get() = _notifications.receiveAsFlow()
 
-    val window = WindowState(height = 920.dp, width = 1100.dp)
+    val window = WindowState(height = 1000.dp, width = 1100.dp)
     val defaultWidth = 40.dp
     val defaultHeight = 40.dp
 
@@ -91,6 +91,10 @@ class SCCUIWindowState(
     var mTextFieldSize = mutableStateListOf(Size.Zero, Size.Zero, Size.Zero, Size.Zero, Size.Zero, Size.Zero, Size.Zero)
 
     var statusText by mutableStateOf("")
+
+    var checkedConfigState by mutableStateOf(true)
+    var checkedLayerState by mutableStateOf(true)
+    var checkedMacroState by mutableStateOf(true)
 
     val activeButtonTextColor = Color.Black //Color.White
     val inactiveButtonTextColor = Color.LightGray
