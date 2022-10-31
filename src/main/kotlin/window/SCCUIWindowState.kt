@@ -54,8 +54,14 @@ data class MappingKey(
 data class Macro(
     var name: String,
     var trigger: String,
+    var metaTriggers: MutableList<MacroMetaTrigger>,
     var index: Int,
     val actions: MutableList<MacroAction>
+)
+data class MacroMetaTrigger(
+    var pressed: Boolean,
+    var leftRight: String,
+    var keyName: String
 )
 
 data class MacroAction(
@@ -83,7 +89,7 @@ class SCCUIWindowState(
     private var _notifications = Channel<NotepadWindowNotification>(0)
     val notifications: Flow<NotepadWindowNotification> get() = _notifications.receiveAsFlow()
 
-    val window = WindowState(height = 1000.dp, width = 1100.dp)
+    val window = WindowState(height = 1000.dp, width = 1700.dp)
     val defaultWidth = 40.dp
     val defaultHeight = 40.dp
 
@@ -92,9 +98,9 @@ class SCCUIWindowState(
 
     var statusText by mutableStateOf("")
 
-    var checkedConfigState by mutableStateOf(true)
-    var checkedLayerState by mutableStateOf(true)
-    var checkedMacroState by mutableStateOf(true)
+    var checkedConfigState by mutableStateOf(false)
+    var checkedLayerState by mutableStateOf(false)
+    var checkedMacroState by mutableStateOf(false)
 
     val activeButtonTextColor = Color.Black //Color.White
     val inactiveButtonTextColor = Color.LightGray
@@ -211,19 +217,40 @@ class SCCUIWindowState(
                     }
                 } else if (macroBlockFound) {
                     val s = it.trim().split(" ")
-                    println(s)
                     if (s[0] == "endmacro") {
-                        println("macro ended")
                         macroIndex++
                         macroActionIndex = 0
                     } else if (s[0] == "macro") {
-                        println("found macro")
                         var trigger = s[1]
                         var name = "No Name"
                         /*if (s[2] != "") {
                             name = s[2].replace("#", "")
                         }*/
-                        macros.add(Macro(name, trigger, macroIndex, mutableListOf(MacroAction("", "", 0))))
+                        var metaTriggers = mutableListOf(MacroMetaTrigger(false, "", ""))
+                        metaTriggers.clear()
+                        for (i in 2 until s.size) {
+                            var triggerString = s[i]
+                            var pressed = false
+                            var leftRight = ""
+                            var keyName = ""
+                            if (triggerString.substring(0, 1) != "-") {
+                                pressed = true
+                            } else {
+                                val i = triggerString.length
+                                triggerString = triggerString.substring(1, i)
+                            }
+                            if (triggerString.substring(0, 1).uppercase() == "R" || triggerString.substring(0, 1).uppercase() == "L") {
+                                leftRight = triggerString.substring(0, 1).uppercase()
+                                val i = triggerString.length
+                                triggerString = triggerString.substring(1, i)
+                            }
+                            keyName = triggerString
+                            if (keyName != "") {
+                                metaTriggers.add(MacroMetaTrigger(pressed, leftRight, keyName))
+                                println(pressed.toString() + leftRight + keyName)
+                            }
+                        }
+                        macros.add(Macro(name, trigger, metaTriggers, macroIndex, mutableListOf(MacroAction("", "", 0))))
                         macros[macroIndex].actions.clear()
                     } else if (s[0] == "#") {
                     } else {
@@ -231,7 +258,6 @@ class SCCUIWindowState(
                         var action = s[0]
                         if (action == "SET_META") { action = "MAKE" }
                         else if (action == "CLEAR_META") { action = "BREAK" }
-                        //println(keyName + " " + action)
                         macros[macroIndex].actions.add(MacroAction(keyName, action, macroActionIndex))
                         macroActionIndex++
                     }
@@ -398,8 +424,11 @@ class SCCUIWindowState(
 
 
     var macroMode by mutableStateOf(false)
-    var macros = mutableStateListOf(Macro("New", "", 0, mutableListOf(MacroAction("", "", 0))))
+    var macros = mutableStateListOf(Macro("New", "", mutableListOf(MacroMetaTrigger(false, "", "")), 0, mutableListOf(MacroAction("", "", 0))))
+    var metaTriggerChoices = listOf("Left pressed", "Left pressed, Right not pressed", "Left and Right pressed", "Right pressed", "Right pressed and Left not pressed", "Left and Right not pressed", "Left not pressed", "Right not pressed", "Any pressed", "Any not pressed", "")
     val actions = listOf(Actions("PRESS", "Press down & let go"), Actions("MAKE", "Press down & hold"), Actions("BREAK", "Let go"))
+
+    //macro <hid> [[-][{l|r}]shift] [[-][{l|r}]ctrl] [[-][{l|r}]alt] [[-][{l|r}]gui] ...
 
     //temp
     var macroButtonColor by mutableStateOf(inactiveButtonColor)
@@ -408,20 +437,77 @@ class SCCUIWindowState(
     var macroName by mutableStateOf("")
     var triggerKey by mutableStateOf("")
     var triggerKeyDescription by mutableStateOf("")
+    var metaTriggers = mutableStateListOf("", "", "", "")
+    /*var ctrl = mutableStateListOf("")
+    var shift = mutableStateListOf("")
+    var alt = mutableStateListOf("")
+    var gui = mutableStateListOf("")*/
     var action = mutableStateListOf("")
     var actionDescription = mutableStateListOf("")
     var actionKey = mutableStateListOf("")
     var actionKeyDescription = mutableStateListOf("")
 
+    var mExpandedMetaTrigger = mutableStateListOf(false, false, false, false)
+    var mTextFieldSizeMetaTrigger = mutableStateListOf(Size.Zero, Size.Zero, Size.Zero, Size.Zero)
     var mExpandedAction = mutableStateListOf(false)
     var mTextFieldSizeAction = mutableStateListOf(Size.Zero)
     var mExpandedActionKey = mutableStateListOf(false)
     var mTextFieldSizeActionKey = mutableStateListOf(Size.Zero)
 
+
     fun saveMacroButtonPressed() {
-        if (triggerKey != "") {
+        if (triggerKey != "" && triggerKey != "NOMAPPING") {
             macros[selectedMacro].name = macroName
             macros[selectedMacro].trigger = triggerKey
+            macros[selectedMacro].metaTriggers.clear()
+            for (i in 0 until metaTriggers.size) {
+                var keyName = ""
+                when (i) {
+                    0 -> { keyName = "CTRL" }
+                    1 -> { keyName = "SHIFT" }
+                    2 -> { keyName = "ALT" }
+                    3 -> { keyName = "GUI"}
+                }
+                when (metaTriggers[i]) {
+                    "Left pressed" -> { macros[selectedMacro].metaTriggers.add(MacroMetaTrigger(true, "L", keyName)) }
+                    "Left pressed, Right not pressed" -> {
+                        macros[selectedMacro].metaTriggers.add(MacroMetaTrigger(true, "L", keyName))
+                        macros[selectedMacro].metaTriggers.add(MacroMetaTrigger(false, "R", keyName))
+                    }
+                    "Left and Right pressed" -> {
+                        macros[selectedMacro].metaTriggers.add(MacroMetaTrigger(true, "L", keyName))
+                        macros[selectedMacro].metaTriggers.add(MacroMetaTrigger(true, "R", keyName))
+                    }
+                    "Right pressed" -> {
+                        macros[selectedMacro].metaTriggers.add(MacroMetaTrigger(true, "R", keyName))
+                    }
+                    "Right pressed and Left not pressed" -> {
+                        macros[selectedMacro].metaTriggers.add(MacroMetaTrigger(false, "L", keyName))
+                        macros[selectedMacro].metaTriggers.add(MacroMetaTrigger(true, "R", keyName))
+                    }
+                    "Left and Right not pressed" -> {
+                        macros[selectedMacro].metaTriggers.add(MacroMetaTrigger(false, "L", keyName))
+                        macros[selectedMacro].metaTriggers.add(MacroMetaTrigger(false, "R", keyName))
+                    }
+                    "Any pressed" -> {
+                        macros[selectedMacro].metaTriggers.add(MacroMetaTrigger(true, "", keyName))
+                    }
+                    "Left not pressed" -> {
+                        macros[selectedMacro].metaTriggers.add(MacroMetaTrigger(false, "L", keyName))
+                    }
+                    "Right not pressed" -> {
+                        macros[selectedMacro].metaTriggers.add(MacroMetaTrigger(false, "R", keyName))
+                    }
+                    "Any not pressed" -> {
+                        macros[selectedMacro].metaTriggers.add(MacroMetaTrigger(false, "", keyName))
+                    }
+                    "" -> {
+                        macros[selectedMacro].metaTriggers.add(MacroMetaTrigger(false, "", ""))
+                    }
+
+                }
+
+            }
             macros[selectedMacro].actions.clear()
             for (i in 0 until action.size) {
                 macros[selectedMacro].actions.add(MacroAction(actionKey[i], action[i], i))
@@ -431,7 +517,7 @@ class SCCUIWindowState(
             statusText = "Please fill all fields before you save."
         }
         if (macros[macros.size-1].trigger != "") {
-            macros.add(Macro("New", "", macros.size, mutableListOf(MacroAction("", "", 0))))
+            macros.add(Macro("New", "", mutableListOf(MacroMetaTrigger(false, "", "")), macros.size, mutableListOf(MacroAction("", "", 0))))
         }
         updateMacroblockOutput()
     }
@@ -442,7 +528,17 @@ class SCCUIWindowState(
         macroblockOutput = "macroblock\r\n"
         macros.forEach() {
             if (it.trigger != "") {
-                macroblockOutput += "macro " + it.trigger + " #" + it.name + "\r\n"
+                macroblockOutput += "macro " + it.trigger
+                for (i in 0 until it.metaTriggers.size) {
+                    if (it.metaTriggers[i].keyName != "") {
+                        macroblockOutput += " "
+                        if (!it.metaTriggers[i].pressed) {
+                            macroblockOutput += "-"
+                        }
+                        macroblockOutput += it.metaTriggers[i].leftRight + it.metaTriggers[i].keyName
+                    }
+                }
+                macroblockOutput += " #" + it.name + "\r\n"
                 it.actions.forEach() {
                     if (it.action != "" && it.keyName != "") {
                         macroblockOutput += "  " + it.action + " " + it.keyName + "\r\n"
@@ -452,7 +548,7 @@ class SCCUIWindowState(
             }
         }
         macroblockOutput += "endblock"
-        println(macroblockOutput)
+        //println(macroblockOutput)
         updateOutput()
     }
 
