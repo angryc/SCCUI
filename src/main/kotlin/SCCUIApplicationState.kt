@@ -36,6 +36,9 @@ class SCCUIApplicationState {
 
     suspend fun exit() {
         val windowsCopy = windows.reversed()
+        /*_windows.forEach() {
+            it.writeSettings()
+        }*/
         for (window in windowsCopy) {
             if (!window.exit()) {
                 break

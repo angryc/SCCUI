@@ -85,6 +85,7 @@ class SCCUIWindowState(
     // ########## GENERAL #############
 
     val settings: Settings get() = application.settings
+    val resourcesDir = File(System.getProperty("compose.application.resources.dir")).toString()
 
     private var _notifications = Channel<NotepadWindowNotification>(0)
     val notifications: Flow<NotepadWindowNotification> get() = _notifications.receiveAsFlow()
@@ -122,6 +123,32 @@ class SCCUIWindowState(
         )
     )*/
 
+    fun readSettings() {
+        val filePath: String = if (System.getProperty("os.name").lowercase().contains("win")) {
+            resourcesDir + "\\settings.txt"
+        } else {
+            resourcesDir + "/settings.txt"
+        }
+        try {
+            _input = Paths.get(filePath).readLines(Charset.defaultCharset())
+            isInit = true
+            _input.forEach {
+                val s = it.trim().split(":")
+                if (s[0].contains("showConfig")) {
+                    checkedConfigState = s[1].contains("true")
+                } else if (s[0].contains("showLayers")) {
+                    checkedLayerState = s[1].contains("true")
+                } else if (s[0].contains("showMacros")) {
+                    checkedMacroState = s[1].contains("true")
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            output = "Cannot read $filePath"
+        }
+
+    }
+
 
 
 
@@ -134,7 +161,6 @@ class SCCUIWindowState(
 
     // read config from Soarer's Converter
     fun read() {
-        val resourcesDir = File(System.getProperty("compose.application.resources.dir")).toString()
         val filePath: String
         val commandDisWin = ProcessBuilder(resourcesDir+"\\scdis", resourcesDir+"\\temp.bin", resourcesDir+"\\temp.txt")
         val command_scdis_win = resourcesDir+"\\scdis.exe "+resourcesDir+"\\temp.bin "+resourcesDir+"\\temp.txt"
@@ -752,20 +778,33 @@ class SCCUIWindowState(
         //println(output)
     }
 
+    fun writeSettings() = runBlocking {
+        var settingsOutput = "showConfig:" + checkedConfigState.toString() + "\r\n"
+        settingsOutput += "showLayers:" + checkedLayerState.toString() + "\r\n"
+        settingsOutput += "showMacros:" + checkedMacroState.toString() + "\r\n"
+
+        if (System.getProperty("os.name").lowercase().contains("win")) {
+            Paths.get(resourcesDir+"\\settings.txt").writeTextAsync(settingsOutput)
+
+        } else {
+            Paths.get(resourcesDir+"/settings.txt").writeTextAsync(settingsOutput)
+        }
+    }
+
+
     //assemble and write file to Soarer's Converter / ask user before flashing
     fun writeTempFile(scope: CoroutineScope) = runBlocking {
-        val resourcesDir = File(System.getProperty("compose.application.resources.dir")).toString()
         val command_scas_win = resourcesDir + "\\scas.exe " + resourcesDir + "\\temp.txt " + resourcesDir + "\\temp.bin"
         val command_scwr_win = resourcesDir + "\\scwr.exe " + resourcesDir + "\\temp.bin"
         val command_scas = resourcesDir + "/scas " + resourcesDir + "/temp.txt " + resourcesDir + "/temp.bin"
         val command_scwr = resourcesDir + "/scwr " + resourcesDir + "/temp.bin"
 
-        Paths.get(resourcesDir+"/temp.txt").writeTextAsync(output)
 
         withContext(Dispatchers.IO) {
             Thread.sleep(1000)
         }
         if (System.getProperty("os.name").lowercase().contains("win")) {
+            Paths.get(resourcesDir+"\\temp.txt").writeTextAsync(output)
             commandLine = withContext(Dispatchers.IO) {
                 Runtime.getRuntime().exec(command_scas_win)
             }.toString()
@@ -780,6 +819,7 @@ class SCCUIWindowState(
             }
 
         } else {
+            Paths.get(resourcesDir+"/temp.txt").writeTextAsync(output)
             commandLine = withContext(Dispatchers.IO) {
                 Runtime.getRuntime().exec(command_scas)
             }.toString()

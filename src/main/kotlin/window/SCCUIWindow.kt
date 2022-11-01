@@ -7,33 +7,23 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.colorspace.ColorSpace
-import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontSynthesis
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.toSize
 import androidx.compose.ui.window.*
 import common.LocalAppResources
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import util.FileDialog
 import util.YesNoCancelDialog
@@ -44,19 +34,21 @@ import java.util.*
 fun SCCUIWindow(state: SCCUIWindowState) {
     val scope = rememberCoroutineScope()
 
-
-
     fun exit() = scope.launch { state.exit() }
+
+    state.readSettings()
 
     Window(
         state = state.window,
         title = titleOf(state),
         resizable = false,
         icon = LocalAppResources.current.icon,
-        onCloseRequest = { exit() }
+        onCloseRequest = {
+            state.writeSettings()
+            exit()
+        }
     ) {
         LaunchedEffect(Unit) { state.run() }
-
         WindowNotifications(state)
         WindowMenuBar(state)
         Column {
@@ -68,42 +60,38 @@ fun SCCUIWindow(state: SCCUIWindowState) {
                         keyboardDropDown(state)
                         if (state.keyboard != 0) {
                             readButton(state)
-                            /*Column {
-                                Row {*/
-                                    //checkboxAndText(state, state.checkedConfigState, "Show Alternative Configs")
-                                    Checkbox(
-                                        checked = state.checkedConfigState,
-                                        onCheckedChange = { state.checkedConfigState = it },
-                                        //modifier = Modifier.padding(0.dp, 0.dp),
-                                        colors = CheckboxDefaults.colors(
-                                            checkedColor = state.backgroundColor,
-                                            uncheckedColor = state.borderColor,
-                                        )
-                                    )
-                                    Text(text = "Show Alternative Configs (not yet implemented)", color = state.textColor, fontFamily = state.oldFont, modifier = Modifier.padding(0.dp, 18.dp))
-                               /* }
-                                Row {*/
-                                    Checkbox(
-                                        checked = state.checkedLayerState,
-                                        onCheckedChange = { state.checkedLayerState = it },
-                                        colors = CheckboxDefaults.colors(
-                                            checkedColor = state.backgroundColor,
-                                            uncheckedColor = state.borderColor
-                                        )
-                                    )
-                                    Text(text = "Show Layers", color = state.textColor, fontFamily = state.oldFont, modifier = Modifier.padding(0.dp, 18.dp))
-                                    Checkbox(
-                                        checked = state.checkedMacroState,
-                                        onCheckedChange = { state.checkedMacroState = it },
-                                        //modifier = Modifier.border(2.dp, state.textColor, RectangleShape),
-                                        colors = CheckboxDefaults.colors(
-                                            checkedColor = state.backgroundColor,
-                                            uncheckedColor = state.borderColor
-                                        )
-                                    )
-                                    Text(text = "Show Macros", color = state.textColor, fontFamily = state.oldFont, modifier = Modifier.padding(0.dp, 18.dp))
-                                //}
-                            //}
+                            Checkbox(
+                                checked = state.checkedConfigState,
+                                onCheckedChange = { state.checkedConfigState = it },
+                                //modifier = Modifier.padding(0.dp, 0.dp),
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = state.backgroundColor,
+                                    uncheckedColor = state.borderColor,
+                                )
+                            )
+                            Text(text = "Show Alternative Configs (not yet implemented)", color = state.textColor, fontFamily = state.oldFont, modifier = Modifier.padding(0.dp, 18.dp))
+
+                            Checkbox(
+                                checked = state.checkedLayerState,
+                                onCheckedChange = { state.checkedLayerState = it },
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = state.backgroundColor,
+                                    uncheckedColor = state.borderColor
+                                )
+                            )
+                            Text(text = "Show Layers", color = state.textColor, fontFamily = state.oldFont, modifier = Modifier.padding(0.dp, 18.dp))
+
+                            Checkbox(
+                                checked = state.checkedMacroState,
+                                onCheckedChange = { state.checkedMacroState = it },
+                                //modifier = Modifier.border(2.dp, state.textColor, RectangleShape),
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = state.backgroundColor,
+                                    uncheckedColor = state.borderColor
+                                )
+                            )
+                            Text(text = "Show Macros", color = state.textColor, fontFamily = state.oldFont, modifier = Modifier.padding(0.dp, 18.dp))
+
                         }
                     }
                     if (state.keyboard != 0) {
