@@ -332,6 +332,8 @@ private fun macroList(state: SCCUIWindowState) {
                                 state.metaTriggers[i] = "Left pressed, Right not pressed"
                             }
                         }
+                    } else {
+                        state.metaTriggers[i] = ""
                     }
 
 
