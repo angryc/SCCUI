@@ -290,7 +290,7 @@ private fun macroList(state: SCCUIWindowState) {
                         2 -> { keyName = "ALT" }
                         3 -> { keyName = "GUI"}
                     }
-                    var metaTriggersCurrentMeta = state.macros[state.selectedMacro].metaTriggers.filter { it.keyName == keyName }
+                    val metaTriggersCurrentMeta = state.macros[state.selectedMacro].metaTriggers.filter { it.keyName == keyName }
 
                     if (metaTriggersCurrentMeta.size == 1) {
                         if (metaTriggersCurrentMeta[0].pressed) {

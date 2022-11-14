@@ -18,7 +18,6 @@ import androidx.compose.ui.window.WindowState
 import common.Settings
 import common.getKeyboard
 import common.getKeyboards
-import evalBash
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -84,7 +83,6 @@ class SCCUIWindowState(
 
     // ########## GENERAL #############
 
-    val settings: Settings get() = application.settings
     val resourcesDir = File(System.getProperty("compose.application.resources.dir")).toString()
 
     private var _notifications = Channel<NotepadWindowNotification>(0)
@@ -125,9 +123,9 @@ class SCCUIWindowState(
 
     fun readSettings() {
         val filePath: String = if (System.getProperty("os.name").lowercase().contains("win")) {
-            resourcesDir + "\\settings.txt"
+            "$resourcesDir\\settings.txt"
         } else {
-            resourcesDir + "/settings.txt"
+            "$resourcesDir/settings.txt"
         }
         try {
             _input = Paths.get(filePath).readLines(Charset.defaultCharset())
@@ -162,24 +160,24 @@ class SCCUIWindowState(
     // read config from Soarer's Converter
     fun read() {
         val filePath: String
-        val commandRdWin = ProcessBuilder(resourcesDir+"\\scrd", resourcesDir+"\\temp.bin")
-        val commandDisWin = ProcessBuilder(resourcesDir+"\\scdis", resourcesDir+"\\temp.bin", resourcesDir+"\\temp.txt")
+        val commandRdWin = ProcessBuilder("$resourcesDir\\scrd", "$resourcesDir\\temp.bin")
+        val commandDisWin = ProcessBuilder("$resourcesDir\\scdis", "$resourcesDir\\temp.bin", "$resourcesDir\\temp.txt")
 
-        val commandRd = ProcessBuilder(resourcesDir+"/scrd", resourcesDir+"/temp.bin")
-        val commandDis = ProcessBuilder(resourcesDir+"/scdis", resourcesDir+"/temp.bin", resourcesDir+"/temp.txt")
+        val commandRd = ProcessBuilder("$resourcesDir/scrd", "$resourcesDir/temp.bin")
+        val commandDis = ProcessBuilder("$resourcesDir/scdis", "$resourcesDir/temp.bin", "$resourcesDir/temp.txt")
 
         if (System.getProperty("os.name").lowercase().contains("win")) {
             commandRdWin.start()
             Thread.sleep(1000)
             commandDisWin.start()
             Thread.sleep(1000)
-            filePath = resourcesDir + "\\temp.txt"
+            filePath = "$resourcesDir\\temp.txt"
         } else {
             commandRd.start()
             Thread.sleep(1000)
             commandDis.start()
             Thread.sleep(1000)
-            filePath = resourcesDir + "/temp.txt"
+            filePath = "$resourcesDir/temp.txt"
         }
         //println(filePath)
         statusText = "Config was read."
@@ -248,12 +246,12 @@ class SCCUIWindowState(
                         macroIndex++
                         macroActionIndex = 0
                     } else if (s[0] == "macro") {
-                        var trigger = s[1]
+                        val trigger = s[1]
                         var name = "No Name"
                         /*if (s[2] != "") {
                             name = s[2].replace("#", "")
                         }*/
-                        var metaTriggers = mutableListOf(MacroMetaTrigger(false, "", ""))
+                        val metaTriggers = mutableListOf(MacroMetaTrigger(false, "", ""))
                         metaTriggers.clear()
                         for (i in 2 until s.size) {
                             var triggerString = s[i]
@@ -263,15 +261,15 @@ class SCCUIWindowState(
                             if (triggerString != "") {
                                 if (triggerString.substring(0, 1) == "-") {
                                     pressed = false
-                                    val i = triggerString.length
-                                    triggerString = triggerString.substring(1, i)
+                                    val l = triggerString.length
+                                    triggerString = triggerString.substring(1, l)
                                 }
                                 if (triggerString.substring(0, 1).uppercase() == "R" || triggerString.substring(0, 1)
                                         .uppercase() == "L"
                                 ) {
                                     leftRight = triggerString.substring(0, 1).uppercase()
-                                    val i = triggerString.length
-                                    triggerString = triggerString.substring(1, i)
+                                    val l = triggerString.length
+                                    triggerString = triggerString.substring(1, l)
                                 }
                                 if (triggerString == "control") {
                                     triggerString = "CTRL"
@@ -764,18 +762,6 @@ class SCCUIWindowState(
     val saveDialog = DialogState<Path?>()
     val exitDialog = DialogState<AlertDialogResult>()
     val flashDialog = DialogState<AlertDialogResult>()
-    
-
-    private var _commandLine by mutableStateOf("")
-    var commandLine: String
-        get() = _commandLine
-        set(value) {
-            check(isInit)
-            _commandLine = value
-            isChanged = true
-        }
-
-
 
 
     fun updateOutput() {
@@ -855,13 +841,6 @@ class SCCUIWindowState(
     var isInit by mutableStateOf(false)
         private set
 
-    fun toggleFullscreen() {
-        window.placement = if (window.placement == WindowPlacement.Fullscreen) {
-            WindowPlacement.Floating
-        } else {
-            WindowPlacement.Fullscreen
-        }
-    }
 
     fun run() {
         if (path != null) {
@@ -879,9 +858,6 @@ class SCCUIWindowState(
         isChanged = false
     }
 
-    fun newWindow() {
-        application.newWindow()
-    }
 
     suspend fun open() {
         if (askToSave()) {
