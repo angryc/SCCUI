@@ -162,23 +162,23 @@ class SCCUIWindowState(
     // read config from Soarer's Converter
     fun read() {
         val filePath: String
+        val commandRdWin = ProcessBuilder(resourcesDir+"\\scrd", resourcesDir+"\\temp.bin")
         val commandDisWin = ProcessBuilder(resourcesDir+"\\scdis", resourcesDir+"\\temp.bin", resourcesDir+"\\temp.txt")
-        val command_scdis_win = resourcesDir+"\\scdis.exe "+resourcesDir+"\\temp.bin "+resourcesDir+"\\temp.txt"
-        val command_scrd_win = resourcesDir+"\\scrd.exe "+resourcesDir+"\\temp.bin"
-        val command_scdis = resourcesDir+"/scdis "+resourcesDir+"/temp.bin "+resourcesDir+"/temp.txt"
-        val command_scrd = resourcesDir+"/scrd "+resourcesDir+"/temp.bin"
+
+        val commandRd = ProcessBuilder(resourcesDir+"/scrd", resourcesDir+"/temp.bin")
+        val commandDis = ProcessBuilder(resourcesDir+"/scdis", resourcesDir+"/temp.bin", resourcesDir+"/temp.txt")
 
         if (System.getProperty("os.name").lowercase().contains("win")) {
-            commandLine = Runtime.getRuntime().exec(command_scrd_win).toString()
+            commandRdWin.start()
             Thread.sleep(1000)
-            commandLine = Runtime.getRuntime().exec(command_scdis_win).toString()
-            //var process = commandDisWin.start()
-            //println(process.)
+            commandDisWin.start()
+            Thread.sleep(1000)
             filePath = resourcesDir + "\\temp.txt"
         } else {
-            commandLine = command_scrd.evalBash().getOrThrow()
+            commandRd.start()
             Thread.sleep(1000)
-            commandLine = command_scdis.evalBash().getOrThrow()
+            commandDis.start()
+            Thread.sleep(1000)
             filePath = resourcesDir + "/temp.txt"
         }
         //println(filePath)
@@ -807,41 +807,34 @@ class SCCUIWindowState(
 
     //assemble and write file to Soarer's Converter / ask user before flashing
     fun writeTempFile(scope: CoroutineScope) = runBlocking {
-        val command_scas_win = resourcesDir + "\\scas.exe " + resourcesDir + "\\temp.txt " + resourcesDir + "\\temp.bin"
-        val command_scwr_win = resourcesDir + "\\scwr.exe " + resourcesDir + "\\temp.bin"
-        val command_scas = resourcesDir + "/scas " + resourcesDir + "/temp.txt " + resourcesDir + "/temp.bin"
-        val command_scwr = resourcesDir + "/scwr " + resourcesDir + "/temp.bin"
 
+        val commandAsWin = ProcessBuilder(resourcesDir+"\\scas", resourcesDir+"\\temp.txt", resourcesDir+"\\temp.bin")
+        val commandWrWin = ProcessBuilder(resourcesDir+"\\scwr", resourcesDir+"\\temp.bin")
+
+        val commandAs = ProcessBuilder(resourcesDir+"/scas", resourcesDir+"/temp.txt", resourcesDir+"/temp.bin")
+        val commandWr = ProcessBuilder(resourcesDir+"/scwr", resourcesDir+"/temp.bin")
 
         withContext(Dispatchers.IO) {
             Thread.sleep(1000)
         }
         if (System.getProperty("os.name").lowercase().contains("win")) {
             Paths.get(resourcesDir+"\\temp.txt").writeTextAsync(output)
-            commandLine = withContext(Dispatchers.IO) {
-                Runtime.getRuntime().exec(command_scas_win)
-            }.toString()
+            commandAsWin.start()
             statusText = "Created binary file for flashing."
             scope.launch {
                 if (askToFlash()) {
-                    commandLine = withContext(Dispatchers.IO) {
-                        Runtime.getRuntime().exec(command_scwr_win)
-                    }.toString()
+                    commandWrWin.start()
                     statusText = "Soarer's Converter flashed."
                 }
             }
 
         } else {
             Paths.get(resourcesDir+"/temp.txt").writeTextAsync(output)
-            commandLine = withContext(Dispatchers.IO) {
-                Runtime.getRuntime().exec(command_scas)
-            }.toString()
+            commandAs.start()
             statusText = "Created binary file for flashing."
             scope.launch {
                 if (askToFlash()) {
-                    commandLine = withContext(Dispatchers.IO) {
-                        Runtime.getRuntime().exec(command_scwr)
-                    }.toString()
+                    commandWr.start()
                     statusText = "Soarer's Converter flashed."
                 }
 
