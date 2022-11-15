@@ -1,7 +1,10 @@
 package window
 
 import SCCUIApplicationState
-import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
@@ -240,8 +243,8 @@ class SCCUIWindowState(
                         macroActionIndex = 0
                     } else if (s[0] == "macro") {
                         val trigger = s[1]
-                        var name = "No Name"
-                        /*if (s[2] != "") {
+                        /*var name = "No Name"
+                        if (s[2] != "") {
                             name = s[2].replace("#", "")
                         }*/
                         val metaTriggers = mutableListOf(MacroMetaTrigger(false, "", ""))
@@ -250,7 +253,7 @@ class SCCUIWindowState(
                             var triggerString = s[i]
                             var pressed = true
                             var leftRight = ""
-                            var keyName = ""
+                            var keyName: String
                             if (triggerString != "") {
                                 if (triggerString.substring(0, 1) == "-") {
                                     pressed = false
@@ -790,9 +793,6 @@ class SCCUIWindowState(
 
             if (flashSource == "Flash from file") {
                 scope.launch { readFileToFlash(scope) }
-                /*val flashFile = async { outputString = readFileToFlash() }
-                flashFile.await()*/
-                //writeTempFile(scope, outputString)
             }
             else {
                 writeTempFile(scope, output)
@@ -822,7 +822,9 @@ class SCCUIWindowState(
             statusText = "Created binary file for flashing."
             scope.launch {
                 if (askToFlash()) {
-                    commandWrWin.start()
+                    withContext(Dispatchers.IO) {
+                        commandWrWin.start()
+                    }
                     statusText = "Soarer's Converter flashed."
                 }
             }
@@ -832,7 +834,9 @@ class SCCUIWindowState(
             statusText = "Created binary file for flashing."
             scope.launch {
                 if (askToFlash()) {
-                    commandWr.start()
+                    withContext(Dispatchers.IO) {
+                        commandWr.start()
+                    }
                     statusText = "Soarer's Converter flashed."
                 }
 

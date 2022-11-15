@@ -484,7 +484,7 @@ private fun addActionButton(state: SCCUIWindowState) {
                 .background(state.activeButtonColor),
             //.border(0.dp, Color.LightGray, RectangleShape),
             onClick = {
-                var index = state.macros[state.selectedMacro].actions.size
+                val index = state.macros[state.selectedMacro].actions.size
                 state.macros[state.selectedMacro].actions.add(MacroAction("", "", index))
                 state.action.add("")
                 state.actionDescription.add("")
@@ -614,7 +614,7 @@ private fun keyboard(state: SCCUIWindowState) {
                                 //set row and column number of each key
                                 state.row = it.row!!
                                 state.column = it.column!!
-                                //update label if it was changed in th UI
+                                //update label if it was changed in the UI
                                 state.label = if (it.label != "  ") {
                                     it.label
                                 } else {
@@ -636,25 +636,31 @@ private fun keyboard(state: SCCUIWindowState) {
                                 height = state.defaultHeight.times(it.height.toFloat())
                             ).padding(all = 0.dp)
                         ) {
-                            Text(
-                                text = if (it.label != "  ") {
-                                    it.label + if (it.mapTo[state.layer] != null) { " > " + it.mapTo[state.layer] } else {""}
-                                } else {
-                                    it.name
-                                },
-                                fontSize = if (it.label != "  ") {
-                                    9.sp
-                                } else {
-                                    7.sp
-                                },
-                                modifier = Modifier.padding(vertical = 0.dp),
-                                color = if (it.label != "  ") {
-                                    Color.Black
-                                } else {
-                                    Color.Gray
-                                },
+                            (if (it.label != "  " && it.mapTo[state.layer] == null) {
+                                it.label
+                            } else if (it.mapTo[state.layer] != null) {
+                                it.mapTo[state.layer]
+                            } else {
+                                it.name
+                            })?.let { it1 ->
+                                Text(
+                                    text = it1,
+                                    fontSize = if (it.label != "  ") {
+                                        9.sp
+                                    } else {
+                                        7.sp
+                                    },
+                                    modifier = Modifier.padding(vertical = 0.dp),
+                                    color = if (it.label != "  " && it.mapTo[state.layer] == null) {
+                                        Color.Black
+                                    } else if (it.mapTo[state.layer] != null) {
+                                        Color.Magenta
+                                    } else {
+                                        Color.Gray
+                                    },
 
-                                )
+                                    )
+                            }
 
                         }
                     } else {
@@ -869,7 +875,7 @@ private fun saveMacroButton(state: SCCUIWindowState) {
 @Composable
 private fun triggerKeyDropdown(state: SCCUIWindowState){
 
-    var no = 5
+    val no = 5
 
     //val focusRequester = remember { FocusRequester() }
     Box {
