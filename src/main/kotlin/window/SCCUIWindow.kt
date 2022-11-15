@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Size
@@ -132,11 +133,14 @@ fun SCCUIWindow(state: SCCUIWindowState) {
                                 state.layerButtonTextColor.add(state.inactiveButtonTextColor)
                             }
 
-                            Box(modifier = Modifier.border(2.dp, state.borderColor).padding(10.dp).fillMaxWidth().height(550.dp)) {
+                            Box(
+                                modifier = Modifier.border(2.dp, state.borderColor).padding(10.dp).fillMaxWidth()
+                                    .height(550.dp)
+                            ) {
                                 //draw macro UI
                                 Row {
                                     //List of all macros
-                                    Column (modifier = Modifier.verticalScroll(ScrollState(1), true)) {
+                                    Column(modifier = Modifier.verticalScroll(ScrollState(1), true)) {
                                         macroList(state)
                                     }
                                     if (state.macroName != "") {
@@ -148,15 +152,18 @@ fun SCCUIWindow(state: SCCUIWindowState) {
                             // draw keyboard and keys
                             //state.initKeyboard(0)
 
-                            Box(modifier = Modifier
-                                .border(2.dp, state.borderColor)
-                                .padding(10.dp)
-                                .fillMaxWidth()) {
+                            Box(
+                                modifier = Modifier
+                                    .border(2.dp, state.borderColor)
+                                    .padding(10.dp)
+                                    .fillMaxWidth()
+                            ) {
 
                                 Column(modifier = Modifier.padding(10.dp)) {
 
-                                    Box(modifier = Modifier
-                                        .background(state.backgroundColor)
+                                    Box(
+                                        modifier = Modifier
+                                            .background(state.backgroundColor)
                                         //.border(2.dp, state.borderColor)
                                     ) {
                                         keyboard(state)
@@ -192,13 +199,13 @@ fun SCCUIWindow(state: SCCUIWindowState) {
                             .verticalScroll(ScrollState(1))
 
                     )*/
+                        Row {
+                            flashRadioButton(state)
+                            //button to flash the converter
+                            flashButton(state, scope)
+                        }
 
-
-                        //button to flash the converter
-                        flashButton(state, scope)
                     }
-
-
 
 
                 }
@@ -233,6 +240,16 @@ fun SCCUIWindow(state: SCCUIWindowState) {
             )
         }
 
+        if (state.selectDialog.isAwaiting) {
+            FileDialog(
+                title = "Soarer's Converter Config UI",
+                isLoad = true,
+                onResult = {
+                    state.selectDialog.onResult(it)
+                }
+            )
+        }
+
         if (state.exitDialog.isAwaiting) {
             YesNoCancelDialog(
                 title = "Soarer's Converter Config UI",
@@ -264,6 +281,37 @@ private fun checkboxAndText(state: SCCUIWindowState, checkedConfigState: Boolean
     )
     Text(text = s, color = state.textColor, fontFamily = state.oldFont, modifier = Modifier.padding(0.dp, 18.dp))
 }*/
+
+@Composable
+private fun flashRadioButton(state: SCCUIWindowState) {
+
+    val label1 = "Flash from config above"
+    val label2 = "Flash from file"
+    Column (
+    ) {
+        Row (verticalAlignment = Alignment.CenterVertically) {
+            RadioButton(
+                selected = state.flashSource == label1,
+                colors = RadioButtonDefaults.colors(selectedColor = state.borderColor, unselectedColor = state.borderColor),
+                onClick = { state.flashSource = label1 }
+            )
+            Text(
+                text = label1, fontFamily = state.oldFont, color = state.inactiveButtonTextColor
+
+            )
+        }
+        Row (verticalAlignment = Alignment.CenterVertically) {
+            RadioButton(
+                selected = state.flashSource == label2,
+                colors = RadioButtonDefaults.colors(selectedColor = state.borderColor, unselectedColor = state.borderColor),
+                onClick = { state.flashSource = label2 }
+            )
+            Text(
+                text = label2, fontFamily = state.oldFont, color = state.inactiveButtonTextColor
+            )
+        }
+    }
+}
 
 
 @Composable
@@ -1245,7 +1293,7 @@ private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: In
             }
             Button(
                 modifier = Modifier.padding(20.dp),
-                onClick = { state.writeTempFile(scope) },
+                onClick = { state.prepareFlash(scope) },
                 shape = RectangleShape,
                 elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
                 colors = ButtonDefaults.buttonColors(state.activeButtonColor)

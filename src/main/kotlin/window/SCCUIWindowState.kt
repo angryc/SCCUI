@@ -1,21 +1,13 @@
 package window
 
 import SCCUIApplicationState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.platform.Font
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Notification
-import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowState
-import common.Settings
 import common.getKeyboard
 import common.getKeyboards
 import kotlinx.coroutines.*
@@ -95,6 +87,7 @@ class SCCUIWindowState(
     var mExpanded = mutableStateListOf(false, false, false, false, false, false, false)
     var mTextFieldSize = mutableStateListOf(Size.Zero, Size.Zero, Size.Zero, Size.Zero, Size.Zero, Size.Zero, Size.Zero)
 
+    var flashSource by mutableStateOf("Flash from config above")
     var statusText by mutableStateOf("")
 
     var checkedConfigState by mutableStateOf(false)
@@ -166,7 +159,7 @@ class SCCUIWindowState(
         val commandRd = ProcessBuilder("$resourcesDir/scrd", "$resourcesDir/temp.bin")
         val commandDis = ProcessBuilder("$resourcesDir/scdis", "$resourcesDir/temp.bin", "$resourcesDir/temp.txt")
 
-        if (System.getProperty("os.name").lowercase().contains("win")) {
+        if (isWindows()) {
             commandRdWin.start()
             Thread.sleep(1000)
             commandDisWin.start()
@@ -760,11 +753,12 @@ class SCCUIWindowState(
 
     val openDialog = DialogState<Path?>()
     val saveDialog = DialogState<Path?>()
+    val selectDialog = DialogState<Path?>()
     val exitDialog = DialogState<AlertDialogResult>()
     val flashDialog = DialogState<AlertDialogResult>()
 
 
-    fun updateOutput() {
+    private fun updateOutput() {
         var i = 0
         output = layerblockOutput
         remapblockOutput.forEach {
@@ -783,28 +777,47 @@ class SCCUIWindowState(
         settingsOutput += "showMacros:" + checkedMacroState.toString() + "\r\n"
 
         if (System.getProperty("os.name").lowercase().contains("win")) {
-            Paths.get(resourcesDir+"\\settings.txt").writeTextAsync(settingsOutput)
+            Paths.get("$resourcesDir\\settings.txt").writeTextAsync(settingsOutput)
 
         } else {
-            Paths.get(resourcesDir+"/settings.txt").writeTextAsync(settingsOutput)
+            Paths.get("$resourcesDir/settings.txt").writeTextAsync(settingsOutput)
         }
     }
 
 
     //assemble and write file to Soarer's Converter / ask user before flashing
-    fun writeTempFile(scope: CoroutineScope) = runBlocking {
+    fun prepareFlash(scope: CoroutineScope) = runBlocking {
 
-        val commandAsWin = ProcessBuilder(resourcesDir+"\\scas", resourcesDir+"\\temp.txt", resourcesDir+"\\temp.bin")
-        val commandWrWin = ProcessBuilder(resourcesDir+"\\scwr", resourcesDir+"\\temp.bin")
+            if (flashSource == "Flash from file") {
+                scope.launch { readFileToFlash(scope) }
+                /*val flashFile = async { outputString = readFileToFlash() }
+                flashFile.await()*/
+                //writeTempFile(scope, outputString)
+            }
+            else {
+                writeTempFile(scope, output)
+            }
 
-        val commandAs = ProcessBuilder(resourcesDir+"/scas", resourcesDir+"/temp.txt", resourcesDir+"/temp.bin")
-        val commandWr = ProcessBuilder(resourcesDir+"/scwr", resourcesDir+"/temp.bin")
+    }
 
-        withContext(Dispatchers.IO) {
-            Thread.sleep(1000)
+    private suspend fun writeTempFile(scope: CoroutineScope, outputString: String) {
+
+        if (isWindows()) {
+            Paths.get("$resourcesDir\\temp.txt").writeTextAsync(outputString)
+        } else {
+            Paths.get("$resourcesDir/temp.txt").writeTextAsync(outputString)
         }
-        if (System.getProperty("os.name").lowercase().contains("win")) {
-            Paths.get(resourcesDir+"\\temp.txt").writeTextAsync(output)
+        flashConverter(scope)
+    }
+
+    private fun flashConverter(scope: CoroutineScope) {
+        val commandAsWin = ProcessBuilder("$resourcesDir\\scas", "$resourcesDir\\temp.txt", "$resourcesDir\\temp.bin")
+        val commandWrWin = ProcessBuilder("$resourcesDir\\scwr", "$resourcesDir\\temp.bin")
+
+        val commandAs = ProcessBuilder("$resourcesDir/scas", "$resourcesDir/temp.txt", "$resourcesDir/temp.bin")
+        val commandWr = ProcessBuilder("$resourcesDir/scwr", "$resourcesDir/temp.bin")
+
+        if (isWindows()) {
             commandAsWin.start()
             statusText = "Created binary file for flashing."
             scope.launch {
@@ -815,7 +828,6 @@ class SCCUIWindowState(
             }
 
         } else {
-            Paths.get(resourcesDir+"/temp.txt").writeTextAsync(output)
             commandAs.start()
             statusText = "Created binary file for flashing."
             scope.launch {
@@ -827,7 +839,9 @@ class SCCUIWindowState(
             }
         }
     }
-
+    private fun isWindows(): Boolean {
+        return System.getProperty("os.name").lowercase().contains("win")
+    }
 
 
 
@@ -866,6 +880,11 @@ class SCCUIWindowState(
                 open(path)
             }
         }
+    }
+
+    private suspend fun readFileToFlash(scope: CoroutineScope)  {
+        val output = selectDialog.awaitResult()?.toFile()?.readText() ?: ""
+        writeTempFile(scope, output)
     }
 
     suspend fun save(): Boolean {
