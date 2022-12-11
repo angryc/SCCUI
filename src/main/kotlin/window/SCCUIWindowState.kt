@@ -770,8 +770,8 @@ class SCCUIWindowState(
             }
             i++
         }
-        output += "\r\n\r\n" + macroblockOutput
-        //println(output)
+        output += macroblockOutput
+        println(output)
     }
 
     fun writeSettings() = runBlocking {
