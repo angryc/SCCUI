@@ -491,7 +491,11 @@ class SCCUIWindowState(
 
     fun saveMacroButtonPressed() {
         if (triggerKeyTemp != "" && triggerKeyTemp != "NOMAPPING") {
-            macros[selectedMacro].name = macroNameTemp
+            if (macroNameTemp == "New") {
+                macros[selectedMacro].name = triggerKeyDescriptionTemp
+            } else {
+                macros[selectedMacro].name = macroNameTemp
+            }
             macros[selectedMacro].trigger = triggerKeyTemp
             macros[selectedMacro].metaTriggers.clear()
             for (i in 0 until metaTriggersTemp.size) {

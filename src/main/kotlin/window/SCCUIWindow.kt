@@ -423,15 +423,18 @@ private fun macroList(state: SCCUIWindowState) {
                         state.actionKeyDescriptionTemp[i] = ""
                     } else { state.actionKeyDescriptionTemp.add("") }
                 }
-                //editMacro(state)
+                // delete not needed temp variables - this is important because they get persisted otherwise!
+                if (state.actionTemp.size > it.actions.size) {
+                    state.actionTemp.removeRange(it.actions.size-1, state.actionTemp.size - 1)
+                }
             },
             shape = RectangleShape,
             elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
             //border = ButtonDefaults.outlinedBorder(RectangleShape, 2.dp, Color.Black, Size(5F, 5F)),
-            colors = ButtonDefaults.buttonColors(state.inactiveButtonColor)
+            colors = if (it.index == state.selectedMacro) { ButtonDefaults.buttonColors(state.activeButtonColor) } else { ButtonDefaults.buttonColors(state.inactiveButtonColor) }
 
 
-        ) { Text(it.name, fontFamily = state.oldFont, color = state.inactiveButtonTextColor) }
+        ) { Text(it.name, fontFamily = state.oldFont, color =  if (it.index == state.selectedMacro) { state.activeButtonTextColor } else { state.inactiveButtonTextColor }) }
 
     }
 
