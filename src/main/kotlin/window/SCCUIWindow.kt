@@ -143,7 +143,7 @@ fun SCCUIWindow(state: SCCUIWindowState) {
                                     Column(modifier = Modifier.verticalScroll(ScrollState(1), true)) {
                                         macroList(state)
                                     }
-                                    if (state.macroName != "") {
+                                    if (state.macroNameTemp != "") {
                                         editMacro(state)
                                     }
                                 }
@@ -322,13 +322,13 @@ private fun macroList(state: SCCUIWindowState) {
                 .padding(0.dp, 0.dp),
             //.border(0.dp, Color.LightGray, RectangleShape),
             onClick = {
-                state.macroName = it.name
+                state.macroNameTemp = it.name
                 state.selectedMacro = it.index
-                state.triggerKey = it.trigger
+                state.triggerKeyTemp = it.trigger
                 if (state.mappingKeys.indexOfFirst { mappingskeys -> mappingskeys.name == it.trigger } != -1) {
-                    state.triggerKeyDescription =
+                    state.triggerKeyDescriptionTemp =
                         state.mappingKeys[state.mappingKeys.indexOfFirst { mappingskeys -> mappingskeys.name == it.trigger }].description
-                } else { state.triggerKeyDescription = "" }
+                } else { state.triggerKeyDescriptionTemp = "" }
                 // Meta Triggers
                 for (i in 0  .. 3) {
                     var keyName = ""
@@ -344,44 +344,44 @@ private fun macroList(state: SCCUIWindowState) {
                         if (metaTriggersCurrentMeta[0].pressed) {
                             when (metaTriggersCurrentMeta[0].leftRight) {
                                 "L" -> {
-                                    state.metaTriggers[i] = "Left pressed"
+                                    state.metaTriggersTemp[i] = "Left pressed"
                                 }
                                 "R" -> {
-                                    state.metaTriggers[i] = "Right pressed"
+                                    state.metaTriggersTemp[i] = "Right pressed"
                                 }
                                 else -> {
-                                    state.metaTriggers[i] = "Any pressed"
+                                    state.metaTriggersTemp[i] = "Any pressed"
                                 }
                             }
                         } else {
                             when (metaTriggersCurrentMeta[0].leftRight) {
                                 "L" -> {
-                                    state.metaTriggers[i] = "Left not pressed"
+                                    state.metaTriggersTemp[i] = "Left not pressed"
                                 }
                                 "R" -> {
-                                    state.metaTriggers[i] = "Right not pressed"
+                                    state.metaTriggersTemp[i] = "Right not pressed"
                                 }
                                 else -> {
-                                    state.metaTriggers[i] = "Any not pressed"
+                                    state.metaTriggersTemp[i] = "Any not pressed"
                                 }
                             }
                         }
                     } else if (metaTriggersCurrentMeta.size == 2) {
                         if (metaTriggersCurrentMeta[0].pressed && metaTriggersCurrentMeta[1].pressed) {
-                            state.metaTriggers[i] = "Left and Right pressed"
+                            state.metaTriggersTemp[i] = "Left and Right pressed"
                         }
                         else if (!metaTriggersCurrentMeta[0].pressed && !metaTriggersCurrentMeta[1].pressed) {
-                            state.metaTriggers[i] = "Left and Right not pressed"
+                            state.metaTriggersTemp[i] = "Left and Right not pressed"
                         }
                         else {
                             if ((metaTriggersCurrentMeta[0].pressed && metaTriggersCurrentMeta[0].leftRight == "R") || (metaTriggersCurrentMeta[1].pressed && metaTriggersCurrentMeta[1].leftRight == "R")) {
-                                state.metaTriggers[i] = "Right Pressed and Left not pressed"
+                                state.metaTriggersTemp[i] = "Right Pressed and Left not pressed"
                             } else {
-                                state.metaTriggers[i] = "Left pressed, Right not pressed"
+                                state.metaTriggersTemp[i] = "Left pressed, Right not pressed"
                             }
                         }
                     } else {
-                        state.metaTriggers[i] = ""
+                        state.metaTriggersTemp[i] = ""
                     }
 
 
@@ -389,39 +389,39 @@ private fun macroList(state: SCCUIWindowState) {
 
                 //Actions
                 for (i in 0 until it.actions.size) {
-                    if (i < state.action.size) {
-                        state.action[i] = it.actions[i].action
+                    if (i < state.actionTemp.size) {
+                        state.actionTemp[i] = it.actions[i].action
                     } else {
-                        state.action.add(it.actions[i].action)
+                        state.actionTemp.add(it.actions[i].action)
                         state.mExpandedAction.add(false)
                         state.mTextFieldSizeAction.add(Size.Zero)
                     }
                     val actionIndex = state.actions.indexOfFirst { actions -> actions.action == it.actions[i].action }
-                    if (actionIndex != -1 && i < state.actionDescription.size) {
-                        state.actionDescription[i] = state.actions[actionIndex].description
-                    } else if (actionIndex != -1 && i >= state.actionDescription.size) {
-                        state.actionDescription.add(state.actions[actionIndex].description)
-                    } else if (actionIndex == -1 && i < state.actionDescription.size) {
-                        state.actionDescription[i] = ""
+                    if (actionIndex != -1 && i < state.actionDescriptionTemp.size) {
+                        state.actionDescriptionTemp[i] = state.actions[actionIndex].description
+                    } else if (actionIndex != -1 && i >= state.actionDescriptionTemp.size) {
+                        state.actionDescriptionTemp.add(state.actions[actionIndex].description)
+                    } else if (actionIndex == -1 && i < state.actionDescriptionTemp.size) {
+                        state.actionDescriptionTemp[i] = ""
                     } else {
-                        state.actionDescription.add("")
+                        state.actionDescriptionTemp.add("")
                     }
-                    if (i < state.actionKey.size) {
-                        state.actionKey[i] = it.actions[i].keyName
+                    if (i < state.actionKeyTemp.size) {
+                        state.actionKeyTemp[i] = it.actions[i].keyName
                     } else {
-                        state.actionKey.add(it.actions[i].keyName)
+                        state.actionKeyTemp.add(it.actions[i].keyName)
                         state.mExpandedActionKey.add(false)
                         state.mTextFieldSizeActionKey.add(Size.Zero)
                     }
                     val actionKeyIndex = state.mappingKeys.indexOfFirst { mappingskeys -> mappingskeys.name == it.actions[i].keyName }
-                    if (actionKeyIndex != -1 && i < state.actionKeyDescription.size) {
-                        state.actionKeyDescription[i] =
+                    if (actionKeyIndex != -1 && i < state.actionKeyDescriptionTemp.size) {
+                        state.actionKeyDescriptionTemp[i] =
                             state.mappingKeys[actionKeyIndex].description
-                    } else if (actionKeyIndex != -1 && i >= state.actionKeyDescription.size) {
-                        state.actionKeyDescription.add(state.mappingKeys[actionKeyIndex].description)
-                    } else if (actionKeyIndex == -1 && i < state.actionKeyDescription.size) {
-                        state.actionKeyDescription[i] = ""
-                    } else { state.actionKeyDescription.add("") }
+                    } else if (actionKeyIndex != -1 && i >= state.actionKeyDescriptionTemp.size) {
+                        state.actionKeyDescriptionTemp.add(state.mappingKeys[actionKeyIndex].description)
+                    } else if (actionKeyIndex == -1 && i < state.actionKeyDescriptionTemp.size) {
+                        state.actionKeyDescriptionTemp[i] = ""
+                    } else { state.actionKeyDescriptionTemp.add("") }
                 }
                 //editMacro(state)
             },
@@ -443,10 +443,10 @@ private fun macroName(state: SCCUIWindowState) {
     Box {
 
         OutlinedTextField(
-            value = state.macroName,
+            value = state.macroNameTemp,
             onValueChange = {
                 if (it.length <= 20) {
-                    state.macroName = it
+                    state.macroNameTemp = it
                 }
             },
             singleLine = true,
@@ -486,10 +486,10 @@ private fun addActionButton(state: SCCUIWindowState) {
             onClick = {
                 val index = state.macros[state.selectedMacro].actions.size
                 state.macros[state.selectedMacro].actions.add(MacroAction("", "", index))
-                state.action.add("")
-                state.actionDescription.add("")
-                state.actionKey.add("")
-                state.actionKeyDescription.add("")
+                state.actionTemp.add("")
+                state.actionDescriptionTemp.add("")
+                state.actionKeyTemp.add("")
+                state.actionKeyDescriptionTemp.add("")
                 state.mExpandedAction.add(false)
                 state.mTextFieldSizeAction.add(Size.Zero)
                 state.mExpandedActionKey.add(false)
@@ -809,14 +809,14 @@ private fun editMacro(state: SCCUIWindowState) {
 
 @Composable
 private fun actionOrderButtons(state: SCCUIWindowState, index: Int) {
-    if (index > 0 && state.action.size > 1) {
+    if (index > 0 && state.actionTemp.size > 1) {
         Button(
             modifier = Modifier.padding(10.dp),
             onClick = {
-                Collections.swap(state.action, index, index - 1)
-                Collections.swap(state.actionDescription, index, index - 1)
-                Collections.swap(state.actionKey, index, index - 1)
-                Collections.swap(state.actionKeyDescription, index, index - 1)
+                Collections.swap(state.actionTemp, index, index - 1)
+                Collections.swap(state.actionDescriptionTemp, index, index - 1)
+                Collections.swap(state.actionKeyTemp, index, index - 1)
+                Collections.swap(state.actionKeyDescriptionTemp, index, index - 1)
             },
             shape = RectangleShape,
             elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
@@ -827,14 +827,14 @@ private fun actionOrderButtons(state: SCCUIWindowState, index: Int) {
             )
         }
     }
-    if (index+1 < state.action.size) {
+    if (index+1 < state.actionTemp.size) {
         Button(
             modifier = Modifier.padding(10.dp),
             onClick = {
-                Collections.swap(state.action, index, index + 1)
-                Collections.swap(state.actionDescription, index, index + 1)
-                Collections.swap(state.actionKey, index, index + 1)
-                Collections.swap(state.actionKeyDescription, index, index + 1)
+                Collections.swap(state.actionTemp, index, index + 1)
+                Collections.swap(state.actionDescriptionTemp, index, index + 1)
+                Collections.swap(state.actionKeyTemp, index, index + 1)
+                Collections.swap(state.actionKeyDescriptionTemp, index, index + 1)
             },
             shape = RectangleShape,
             elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
@@ -884,11 +884,11 @@ private fun triggerKeyDropdown(state: SCCUIWindowState){
             // Create an Outlined Text Field
             // with icon and not expanded
             OutlinedTextField(
-                value = state.triggerKeyDescription,
+                value = state.triggerKeyDescriptionTemp,
                 onValueChange = {
                     state.mappingKeysDropDown = state.mappingKeys
                     state.foundMappingKeys = mutableStateListOf(state.mappingKeys[0])
-                    state.triggerKeyDescription = it
+                    state.triggerKeyDescriptionTemp = it
                     state.mappingKeysDropDown.forEach() { mappingKey ->
                         if (mappingKey.description.contains(it, ignoreCase = true) && mappingKey.name != "NOMAPPING") {
                             //println(mappingKey.description)
@@ -932,8 +932,8 @@ private fun triggerKeyDropdown(state: SCCUIWindowState){
             ) {
                 state.mappingKeysDropDown.forEach {
                     DropdownMenuItem(onClick = {
-                        state.triggerKeyDescription = it.description
-                        state.triggerKey = it.name
+                        state.triggerKeyDescriptionTemp = it.description
+                        state.triggerKeyTemp = it.name
                         state.mExpanded[no] = false
                     }
                     ) {
@@ -966,9 +966,9 @@ private fun metaTriggerDropDown(state: SCCUIWindowState, keyName: String) {
             // Create an Outlined Text Field
             // with icon and not expanded
             OutlinedTextField(
-                value = state.metaTriggers[index],
+                value = state.metaTriggersTemp[index],
                 onValueChange = {
-                    state.metaTriggers[index] = it
+                    state.metaTriggersTemp[index] = it
                     state.mExpandedMetaTrigger[index] = true
                 },
                 modifier = Modifier
@@ -996,7 +996,7 @@ private fun metaTriggerDropDown(state: SCCUIWindowState, keyName: String) {
             ) {
                 state.metaTriggerChoices.forEach {
                     DropdownMenuItem(onClick = {
-                        state.metaTriggers[index] = it
+                        state.metaTriggersTemp[index] = it
                         state.mExpandedMetaTrigger[index] = false
                     }) {
                         Text(text = it, fontFamily = state.oldFont)
@@ -1026,9 +1026,9 @@ private fun actionDropdown(state: SCCUIWindowState, macroActionNumber: Int) {
             // Create an Outlined Text Field
             // with icon and not expanded
             OutlinedTextField(
-                value = state.actionDescription[macroActionNumber],
+                value = state.actionDescriptionTemp[macroActionNumber],
                 onValueChange = {
-                    state.actionDescription[macroActionNumber] = it
+                    state.actionDescriptionTemp[macroActionNumber] = it
                 },
                 modifier = Modifier
                     //.fillMaxWidth()
@@ -1062,8 +1062,8 @@ private fun actionDropdown(state: SCCUIWindowState, macroActionNumber: Int) {
             ) {
                 state.actions.forEach {
                     DropdownMenuItem(onClick = {
-                        state.action[macroActionNumber] = it.action
-                        state.actionDescription[macroActionNumber] = it.description
+                        state.actionTemp[macroActionNumber] = it.action
+                        state.actionDescriptionTemp[macroActionNumber] = it.description
                         state.mExpandedAction[macroActionNumber] = false
                     }
                     ) {
@@ -1092,12 +1092,12 @@ private fun actionKeyDropdown(state: SCCUIWindowState, macroActionNumber: Int){
             // Create an Outlined Text Field
             // with icon and not expanded
             OutlinedTextField(
-                value = state.actionKeyDescription[macroActionNumber],
+                value = state.actionKeyDescriptionTemp[macroActionNumber],
                 onValueChange = {
 
                     state.mappingKeysDropDown = state.mappingKeys
                     state.foundMappingKeys = mutableStateListOf(state.mappingKeys[0])
-                    state.actionKeyDescription[macroActionNumber] = it
+                    state.actionKeyDescriptionTemp[macroActionNumber] = it
                     state.mappingKeysDropDown.forEach() { mappingKey ->
                         if (mappingKey.description.contains(it, ignoreCase = true) && mappingKey.name != "NOMAPPING") {
                             //println(mappingKey.description)
@@ -1141,8 +1141,8 @@ private fun actionKeyDropdown(state: SCCUIWindowState, macroActionNumber: Int){
             ) {
                 state.mappingKeysDropDown.forEach {
                     DropdownMenuItem(onClick = {
-                        state.actionKeyDescription[macroActionNumber] = it.description
-                        state.actionKey[macroActionNumber] = it.name
+                        state.actionKeyDescriptionTemp[macroActionNumber] = it.description
+                        state.actionKeyTemp[macroActionNumber] = it.name
                         state.mExpandedActionKey[macroActionNumber] = false
                     }
                     ) {
