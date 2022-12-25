@@ -305,6 +305,7 @@ class SCCUIWindowState(
                 }
             }
             layer = 0 //set layer to default layer
+            createNewMacro()
             updateRemapblockOutput(0)
             updateMacroblockOutput()
             updateLayerblockOutput()
@@ -704,12 +705,21 @@ class SCCUIWindowState(
         } else {
             statusText = "Please fill all fields before you save."
         }
-        if (macros[macros.size-1].trigger != "") {
-            macros.add(Macro("New", "", mutableListOf(MacroMetaTrigger(false, "", "")), macros.size, mutableListOf(MacroAction("", "", 0))))
+        if (macros[0].trigger != "") {
+            createNewMacro()
+            selectedMacro += 1
         }
         updateMacroblockOutput()
     }
 
+    private fun createNewMacro() {
+        var i = 1 // because index 0 will be the newly added macro below
+        macros.forEach {
+            it.index = i
+            i++
+        }
+        macros.add(0, Macro("New", "", mutableListOf(MacroMetaTrigger(false, "", "")), 0, mutableListOf(MacroAction("", "", 0))))
+    }
 
     private fun updateMacroblockOutput() {
 
