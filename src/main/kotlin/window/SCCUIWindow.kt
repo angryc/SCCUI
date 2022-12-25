@@ -126,7 +126,7 @@ fun SCCUIWindow(state: SCCUIWindowState) {
         }
     }
 }
-
+@Composable
 fun drawStatusbar(state: SCCUIWindowState) {
     Box (modifier = Modifier
         .background(Color(0xFF00AAAA))
@@ -137,7 +137,7 @@ fun drawStatusbar(state: SCCUIWindowState) {
         Text(text = state.statusText, color = state.textColor, fontFamily = state.oldFont)
     }
 }
-
+@Composable
 fun drawKeyboard(state: SCCUIWindowState) {
 // draw keyboard and keys
 
@@ -169,7 +169,7 @@ fun drawKeyboard(state: SCCUIWindowState) {
 
     }
 }
-
+@Composable
 fun drawMacroScreen(state: SCCUIWindowState) {
     state.layerButtonColor.clear()
     state.layerButtonTextColor.clear()
@@ -194,7 +194,7 @@ fun drawMacroScreen(state: SCCUIWindowState) {
         }
     }
 }
-
+@Composable
 fun navigationMenu(state: SCCUIWindowState) {
 //UI elements for switching layers and selecting layer keys
     if (state.checkedLayerState || state.checkedMacroState) {
@@ -460,7 +460,8 @@ private fun keyboard(state: SCCUIWindowState) {
                                 //set row and column number of each key
                                 state.row = it.row!!
                                 state.column = it.column!!
-                                //update label if it was changed in the UI
+                                //update name & label if it was changed in the UI
+                                state.name = it.name
                                 state.label = if (it.label != "  ") {
                                     it.label
                                 } else {
@@ -473,7 +474,6 @@ private fun keyboard(state: SCCUIWindowState) {
                                 } else {
                                     state.mapToDescription = ""
                                 }
-
                             },
                             colors = ButtonDefaults.buttonColors(backgroundColor = it.backgroundColor),
                             contentPadding = PaddingValues(0.dp),
@@ -492,22 +492,20 @@ private fun keyboard(state: SCCUIWindowState) {
                                 Text(
                                     text = it1,
                                     fontSize = if (it.label != "  ") {
-                                        9.sp
-                                    } else {
-                                        7.sp
-                                    },
+                                            9.sp
+                                        } else {
+                                            7.sp
+                                        },
                                     modifier = Modifier.padding(vertical = 0.dp),
                                     color = if (it.label != "  " && it.mapTo[state.layer] == null) {
-                                        Color.Black
-                                    } else if (it.mapTo[state.layer] != null) {
-                                        Color.Magenta
-                                    } else {
-                                        Color.Gray
-                                    },
-
+                                            Color.Black
+                                        } else if (it.mapTo[state.layer] != null) {
+                                            Color.Magenta
+                                        } else {
+                                            Color.Gray
+                                        },
                                     )
                             }
-
                         }
                     } else {
                         Spacer(
@@ -532,8 +530,10 @@ private fun selectedKey(state: SCCUIWindowState) {
     Box {
 
         OutlinedTextField(
-            value = state.label,
-            onValueChange = { state.label = it },
+            value = if (state.label == "") { "" } else { state.label + " (" + state.name +")" },
+            onValueChange = {
+                state.label = it
+            },
             textStyle = TextStyle(fontFamily = state.oldFont, textAlign = TextAlign.Center, color = state.textColor),
             modifier = Modifier.padding(0.dp, 10.dp).border(2.dp, state.borderColor, RectangleShape),
             //singleline = true
@@ -610,7 +610,7 @@ private fun mapToDropDown(state: SCCUIWindowState){
                 }
                 ) {
                     Text(
-                        text = it.description, fontFamily = state.oldFont//, fontSize = 12.sp
+                        text = it.description /* + " (" + it.name + ")" */, fontFamily = state.oldFont//, fontSize = 12.sp
                     )
                 }
             }

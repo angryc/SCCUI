@@ -761,6 +761,7 @@ class SCCUIWindowState(
 
     // temp variables
     var label by mutableStateOf("")
+    var name by mutableStateOf("")
     var mapTo by mutableStateOf("")
     var mapToDescription by mutableStateOf("")
     var row: Int by mutableStateOf(1)
@@ -784,7 +785,7 @@ class SCCUIWindowState(
     }
 
     fun applyMapToButtonPressed() {
-        rows[row][column].label = label
+        //rows[row][column].label = label //maybe activate later, if changed labels are persisted in file
         if (rows[row][column].mapTo[layer] != null) {
             if (!rows[row][column].mapTo[layer]!!.startsWith("FN")) { //FN keys cannot be overwritten!
                 if (mapTo == "NOMAPPING") { //delete mapping
