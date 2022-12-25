@@ -78,7 +78,7 @@ class SCCUIWindowState(
 
     // ########## GENERAL #############
 
-    val resourcesDir = File(System.getProperty("compose.application.resources.dir")).toString()
+    private val resourcesDir = File(System.getProperty("compose.application.resources.dir")).toString()
 
     private var _notifications = Channel<NotepadWindowNotification>(0)
     val notifications: Flow<NotepadWindowNotification> get() = _notifications.receiveAsFlow()
@@ -345,9 +345,36 @@ class SCCUIWindowState(
     var layerKeyDescriptionTemp = mutableStateListOf("", "", "", "")
 
     //these are used to create the output
-    var fnKey = mutableStateListOf("not used but needed", "", "", "", "", "", "", "", "")
-    var layerKey = mutableStateListOf(mutableListOf(0,0,0,0), mutableListOf(0,0,0,0), mutableListOf(0,0,0,0), mutableListOf(0,0,0,0), mutableListOf(0,0,0,0), mutableListOf(0,0,0,0), mutableListOf(0,0,0,0), mutableListOf(0,0,0,0), mutableListOf(0,0,0,0))
+    private var fnKey = mutableStateListOf("not used but needed", "", "", "", "", "", "", "", "")
+    private var layerKey = mutableStateListOf(mutableListOf(0,0,0,0), mutableListOf(0,0,0,0), mutableListOf(0,0,0,0), mutableListOf(0,0,0,0), mutableListOf(0,0,0,0), mutableListOf(0,0,0,0), mutableListOf(0,0,0,0), mutableListOf(0,0,0,0), mutableListOf(0,0,0,0))
 
+    fun layerButtonClicked(layerArgs: Int) {
+        macroMode = false
+
+        if (layerArgs == 0) {
+            statusText = "Click on a key to map it to another."
+        } else {
+            statusText = "Select 1, 2 or 3 keys to access the layer. And then click on a key to map it to another."
+        }
+
+        layer = layerArgs
+        for (i in 0..2) {
+            if (layerKey[layerArgs][i] != 0) {
+                layerKeyNameTemp[i] = fnKey[layerKey[layerArgs][i]]
+            }
+            if (fnKey[layerKey[layerArgs][i]] != "" && layerKey[layerArgs][i] != 0 && mappingKeys.indexOfFirst { it.name == fnKey[layerKey[layerArgs][i]] } != -1) {
+                layerKeyDescriptionTemp[i] = mappingKeys[mappingKeys.indexOfFirst { it.name == fnKey[layerKey[layerArgs][i]] }].description
+            } else { //this is only done to update the variable and therefore the UI
+                layerKeyDescriptionTemp[i] = ""
+                label = ""
+                mapTo = ""
+                mapToDescription = ""
+            }
+        }
+
+        updateRemapblockOutput(layerArgs)
+        updateLayerblockOutput()
+    }
 
     fun applyLayerKeyButtonPressed() {
 
@@ -489,6 +516,129 @@ class SCCUIWindowState(
     var actionKeyDescriptionTemp = mutableStateListOf("")
 
 
+    fun macrolistClicked (macro: Macro) {
+        macroNameTemp = macro.name
+        selectedMacro = macro.index
+        triggerKeyTemp = macro.trigger
+        if (mappingKeys.indexOfFirst { mappingskeys -> mappingskeys.name == macro.trigger } != -1) {
+            triggerKeyDescriptionTemp =
+                mappingKeys[mappingKeys.indexOfFirst { mappingskeys -> mappingskeys.name == macro.trigger }].description
+        } else { triggerKeyDescriptionTemp = "" }
+        // Meta Triggers
+        for (i in 0  .. 3) {
+            var keyName = ""
+            when (i) {
+                0 -> { keyName = "CTRL" }
+                1 -> { keyName = "SHIFT" }
+                2 -> { keyName = "ALT" }
+                3 -> { keyName = "GUI"}
+            }
+            val metaTriggersCurrentMeta = macros[selectedMacro].metaTriggers.filter { it.keyName == keyName }
+
+            if (metaTriggersCurrentMeta.size == 1) {
+                if (metaTriggersCurrentMeta[0].pressed) {
+                    when (metaTriggersCurrentMeta[0].leftRight) {
+                        "L" -> {
+                            metaTriggersTemp[i] = "Left pressed"
+                        }
+                        "R" -> {
+                            metaTriggersTemp[i] = "Right pressed"
+                        }
+                        else -> {
+                            metaTriggersTemp[i] = "Any pressed"
+                        }
+                    }
+                } else {
+                    when (metaTriggersCurrentMeta[0].leftRight) {
+                        "L" -> {
+                            metaTriggersTemp[i] = "Left not pressed"
+                        }
+                        "R" -> {
+                            metaTriggersTemp[i] = "Right not pressed"
+                        }
+                        else -> {
+                            metaTriggersTemp[i] = "Any not pressed"
+                        }
+                    }
+                }
+            } else if (metaTriggersCurrentMeta.size == 2) {
+                if (metaTriggersCurrentMeta[0].pressed && metaTriggersCurrentMeta[1].pressed) {
+                    metaTriggersTemp[i] = "Left and Right pressed"
+                }
+                else if (!metaTriggersCurrentMeta[0].pressed && !metaTriggersCurrentMeta[1].pressed) {
+                    metaTriggersTemp[i] = "Left and Right not pressed"
+                }
+                else {
+                    if ((metaTriggersCurrentMeta[0].pressed && metaTriggersCurrentMeta[0].leftRight == "R") || (metaTriggersCurrentMeta[1].pressed && metaTriggersCurrentMeta[1].leftRight == "R")) {
+                        metaTriggersTemp[i] = "Right Pressed and Left not pressed"
+                    } else {
+                        metaTriggersTemp[i] = "Left pressed, Right not pressed"
+                    }
+                }
+            } else {
+                metaTriggersTemp[i] = ""
+            }
+
+
+        }
+
+        //Actions
+        for (i in 0 until macro.actions.size) {
+            if (i < actionTemp.size) {
+                actionTemp[i] = macro.actions[i].action
+            } else {
+                actionTemp.add(macro.actions[i].action)
+                mExpandedAction.add(false)
+                mTextFieldSizeAction.add(Size.Zero)
+            }
+            val actionIndex = actions.indexOfFirst { actions -> actions.action == macro.actions[i].action }
+            if (actionIndex != -1 && i < actionDescriptionTemp.size) {
+                actionDescriptionTemp[i] = actions[actionIndex].description
+            } else if (actionIndex != -1 && i >= actionDescriptionTemp.size) {
+                actionDescriptionTemp.add(actions[actionIndex].description)
+            } else if (actionIndex == -1 && i < actionDescriptionTemp.size) {
+                actionDescriptionTemp[i] = ""
+            } else {
+                actionDescriptionTemp.add("")
+            }
+            if (i < actionKeyTemp.size) {
+                actionKeyTemp[i] = macro.actions[i].keyName
+            } else {
+                actionKeyTemp.add(macro.actions[i].keyName)
+                mExpandedActionKey.add(false)
+                mTextFieldSizeActionKey.add(Size.Zero)
+            }
+            val actionKeyIndex = mappingKeys.indexOfFirst { mappingskeys -> mappingskeys.name == macro.actions[i].keyName }
+            if (actionKeyIndex != -1 && i < actionKeyDescriptionTemp.size) {
+                actionKeyDescriptionTemp[i] =
+                    mappingKeys[actionKeyIndex].description
+            } else if (actionKeyIndex != -1 && i >= actionKeyDescriptionTemp.size) {
+                actionKeyDescriptionTemp.add(mappingKeys[actionKeyIndex].description)
+            } else if (actionKeyIndex == -1 && i < actionKeyDescriptionTemp.size) {
+                actionKeyDescriptionTemp[i] = ""
+            } else { actionKeyDescriptionTemp.add("") }
+        }
+        // delete not needed temp variables - this is important because they get persisted otherwise!
+        if (actionTemp.size > macro.actions.size) {
+            actionTemp.removeRange(macro.actions.size - 1, actionTemp.size - 1)
+        }
+    }
+
+    fun addActionButtonClicked () {
+        val index = macros[selectedMacro].actions.size
+        macros[selectedMacro].actions.add(MacroAction("", "", index))
+        actionTemp.add("")
+        actionDescriptionTemp.add("")
+        actionKeyTemp.add("")
+        actionKeyDescriptionTemp.add("")
+        mExpandedAction.add(false)
+        mTextFieldSizeAction.add(Size.Zero)
+        mExpandedActionKey.add(false)
+        mTextFieldSizeActionKey.add(Size.Zero)
+        macroMode = false
+        macroMode = true
+    }
+
     fun saveMacroButtonPressed() {
         if (triggerKeyTemp != "" && triggerKeyTemp != "NOMAPPING") {
             if (macroNameTemp == "New") {
@@ -609,6 +759,13 @@ class SCCUIWindowState(
     // data to persist
     var rows = mutableStateListOf(mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))))
 
+    // temp variables
+    var label by mutableStateOf("")
+    var mapTo by mutableStateOf("")
+    var mapToDescription by mutableStateOf("")
+    var row: Int by mutableStateOf(1)
+    var column: Int by mutableStateOf(1)
+
     fun initKeyboard(index: Int) {
         rows = mutableStateListOf(mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))))
         val keyboard = getKeyboard(index)
@@ -651,55 +808,6 @@ class SCCUIWindowState(
         }
         updateRemapblockOutput(layer)
     }
-
-
-
-    // temp variables
-
-    //label on the selected key
-    private var _label by mutableStateOf("")
-    var label: String
-        get() = _label
-        set(value) {
-            check(isInit)
-            _label = value
-            isChanged = true
-        }
-
-    //key to which the selected key should be mapped to
-    private var _mapTo by mutableStateOf("")
-    var mapTo: String
-        get() = _mapTo
-        set(value) {
-            check(isInit)
-            _mapTo = value
-            isChanged = true
-        }
-    private var _mapToDescription by mutableStateOf("")
-    var mapToDescription: String
-        get() = _mapToDescription
-        set(value) {
-            check(isInit)
-            _mapToDescription = value
-            isChanged = true
-        }
-
-    private var _row: Int by mutableStateOf(1)
-    var row: Int
-        get() = _row
-        set(value) {
-            check(isInit)
-            _row = value
-            isChanged = true
-        }
-    private var _column: Int by mutableStateOf(1)
-    var column: Int
-        get() = _column
-        set(value) {
-            check(isInit)
-            _column = value
-            isChanged = true
-        }
 
 
     private fun setMapTo(s: List<String?>, layer: Int) {
@@ -963,7 +1071,7 @@ class SCCUIWindowState(
         return false
     }
 
-    suspend fun askToFlash(): Boolean {
+    private suspend fun askToFlash(): Boolean {
             when (flashDialog.awaitResult()) {
                 AlertDialogResult.Yes -> return true
                 AlertDialogResult.No -> return false

@@ -55,170 +55,30 @@ fun SCCUIWindow(state: SCCUIWindowState) {
         Column {
             Box (modifier = Modifier.background(state.backgroundColor).padding(10.dp).border(2.dp, state.borderColor).fillMaxWidth().fillMaxHeight(0.965F)) {
                 Column (modifier = Modifier.padding(10.dp)) {
-
                     //UI element for selecting keyboard (layout)
                     Row {
                         keyboardDropDown(state)
                         if (state.keyboard != 0) {
                             readButton(state)
-                            Checkbox(
-                                checked = state.checkedConfigState,
-                                onCheckedChange = { state.checkedConfigState = it },
-                                //modifier = Modifier.padding(0.dp, 0.dp),
-                                colors = CheckboxDefaults.colors(
-                                    checkedColor = state.backgroundColor,
-                                    uncheckedColor = state.borderColor,
-                                )
-                            )
-                            Text(text = "Show Alternative Configs (not yet implemented)", color = state.textColor, fontFamily = state.oldFont, modifier = Modifier.padding(0.dp, 18.dp))
-
-                            Checkbox(
-                                checked = state.checkedLayerState,
-                                onCheckedChange = { state.checkedLayerState = it },
-                                colors = CheckboxDefaults.colors(
-                                    checkedColor = state.backgroundColor,
-                                    uncheckedColor = state.borderColor
-                                )
-                            )
-                            Text(text = "Show Layers", color = state.textColor, fontFamily = state.oldFont, modifier = Modifier.padding(0.dp, 18.dp))
-
-                            Checkbox(
-                                checked = state.checkedMacroState,
-                                onCheckedChange = { state.checkedMacroState = it },
-                                //modifier = Modifier.border(2.dp, state.textColor, RectangleShape),
-                                colors = CheckboxDefaults.colors(
-                                    checkedColor = state.backgroundColor,
-                                    uncheckedColor = state.borderColor
-                                )
-                            )
-                            Text(text = "Show Macros", color = state.textColor, fontFamily = state.oldFont, modifier = Modifier.padding(0.dp, 18.dp))
-
+                            settingsCheckboxes(state)
                         }
                     }
                     if (state.keyboard != 0) {
-                        //UI elements for switching layers and selecting layer keys
-                        if (state.checkedLayerState || state.checkedMacroState) {
-                            Box(modifier = Modifier.border(2.dp, state.borderColor).padding(10.dp)) {
-                                Column {
-                                    Row(modifier = Modifier.fillMaxWidth()) {
-                                        layerButton(state, 0)
-                                        if (state.checkedLayerState) {
-                                            for (i in 1..8) {
-                                                layerButton(state, i)
-                                            }
-                                        }
-                                        if (state.checkedMacroState) {
-                                            macroButton(state)
-                                        }
-                                    }
-                                    Row {
-                                        if (state.layer != 0 && !state.macroMode) {
-                                            for (i in 0..2) { //must be 0-2 not 1-3 !
-                                                layerKeyDropDown(state, i + 1, i)
-                                            }
-                                            applyLayerKeyButton(state)
-                                        }
-                                    }
-                                }
-
-                            }
-                        }
+                        navigationMenu(state)
                         Row(modifier = Modifier.padding(5.dp)) {}
-
-                        if (state.macroMode) {
-                            state.layerButtonColor.clear()
-                            state.layerButtonTextColor.clear()
-                            for (i in 0..8) {
-                                state.layerButtonColor.add(state.inactiveButtonColor)
-                                state.layerButtonTextColor.add(state.inactiveButtonTextColor)
-                            }
-
-                            Box(
-                                modifier = Modifier.border(2.dp, state.borderColor).padding(10.dp).fillMaxWidth()
-                                    .height(550.dp)
-                            ) {
-                                //draw macro UI
-                                Row {
-                                    //List of all macros
-                                    Column(modifier = Modifier.verticalScroll(ScrollState(1), true)) {
-                                        macroList(state)
-                                    }
-                                    if (state.macroNameTemp != "") {
-                                        editMacro(state)
-                                    }
-                                }
-                            }
+                        if (state.macroMode) { // draw macro screen or draw keyboard
+                            drawMacroScreen(state)
                         } else {
-                            // draw keyboard and keys
-                            //state.initKeyboard(0)
-
-                            Box(
-                                modifier = Modifier
-                                    .border(2.dp, state.borderColor)
-                                    .padding(10.dp)
-                                    .fillMaxWidth()
-                            ) {
-
-                                Column(modifier = Modifier.padding(10.dp)) {
-
-                                    Box(
-                                        modifier = Modifier
-                                            .background(state.backgroundColor)
-                                        //.border(2.dp, state.borderColor)
-                                    ) {
-                                        keyboard(state)
-                                    }
-                                    //UI elements for remapping
-                                    Row(
-                                        modifier = Modifier
-                                            .padding(0.dp, 10.dp)
-
-                                    ) {
-
-                                        selectedKey(state)
-                                        //Text(" --> ")
-                                        mapToDropDown(state)
-
-                                        applyMapToButton(state)
-                                    }
-                                }
-
-
-                            }
+                            drawKeyboard(state)
                         }
-                        // Output Text Field
-                        /*
-                    BasicTextField(
-                        value = state.remapblockOutput[state.layer],
-                        onValueChange = { state.remapblockOutput[state.layer] = it },
-                        modifier = Modifier
-                            .height(100.dp)
-                            .requiredWidth(500.dp)
-                            .border(BorderStroke(2.dp, Color.LightGray))
-                            .padding(20.dp)
-                            .verticalScroll(ScrollState(1))
-
-                    )*/
                         Row {
-                            flashRadioButton(state)
-                            //button to flash the converter
-                            flashButton(state, scope)
+                            flashRadioButton(state) //radio selection to choose source of config to flash
+                            flashButton(state, scope) //button to flash the converter
                         }
-
                     }
-
-
                 }
             }
-            //Status bar
-            Box (modifier = Modifier
-                .background(Color(0xFF00AAAA))
-                .fillMaxWidth()
-                .padding(10.dp)
-                //.align(Alignment.Bottom)
-            ) {
-                Text(text = state.statusText, color = state.textColor, fontFamily = state.oldFont)
-            }
+            drawStatusbar(state)
         }
 
 
@@ -267,20 +127,140 @@ fun SCCUIWindow(state: SCCUIWindowState) {
     }
 }
 
-/*
+fun drawStatusbar(state: SCCUIWindowState) {
+    Box (modifier = Modifier
+        .background(Color(0xFF00AAAA))
+        .fillMaxWidth()
+        .padding(10.dp)
+        //.align(Alignment.Bottom)
+    ) {
+        Text(text = state.statusText, color = state.textColor, fontFamily = state.oldFont)
+    }
+}
+
+fun drawKeyboard(state: SCCUIWindowState) {
+// draw keyboard and keys
+
+    Box(
+        modifier = Modifier
+            .border(2.dp, state.borderColor)
+            .padding(10.dp)
+            .fillMaxWidth()
+    ) {
+
+        Column(modifier = Modifier.padding(10.dp)) {
+
+            Box(
+                modifier = Modifier.background(state.backgroundColor)
+                //.border(2.dp, state.borderColor)
+            ) {
+                keyboard(state)
+            }
+            //UI elements for remapping
+            Row(
+                modifier = Modifier.padding(0.dp, 10.dp)
+
+            ) {
+                selectedKey(state)
+                mapToDropDown(state)
+                applyMapToButton(state)
+            }
+        }
+
+    }
+}
+
+fun drawMacroScreen(state: SCCUIWindowState) {
+    state.layerButtonColor.clear()
+    state.layerButtonTextColor.clear()
+    for (i in 0..8) {
+        state.layerButtonColor.add(state.inactiveButtonColor)
+        state.layerButtonTextColor.add(state.inactiveButtonTextColor)
+    }
+
+    Box(
+        modifier = Modifier.border(2.dp, state.borderColor).padding(10.dp).fillMaxWidth()
+            .height(550.dp)
+    ) {
+        //draw macro UI
+        Row {
+            //List of all macros
+            Column(modifier = Modifier.verticalScroll(ScrollState(1), true)) {
+                macroList(state)
+            }
+            if (state.macroNameTemp != "") {
+                editMacro(state)
+            }
+        }
+    }
+}
+
+fun navigationMenu(state: SCCUIWindowState) {
+//UI elements for switching layers and selecting layer keys
+    if (state.checkedLayerState || state.checkedMacroState) {
+        Box(modifier = Modifier.border(2.dp, state.borderColor).padding(10.dp)) {
+            Column {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    layerButton(state, 0)
+                    if (state.checkedLayerState) {
+                        for (i in 1..8) {
+                            layerButton(state, i)
+                        }
+                    }
+                    if (state.checkedMacroState) {
+                        macroButton(state)
+                    }
+                }
+                Row {
+                    if (state.layer != 0 && !state.macroMode) {
+                        for (i in 0..2) { //must be 0-2 not 1-3 !
+                            layerKeyDropDown(state, i + 1, i)
+                        }
+                        applyLayerKeyButton(state)
+                    }
+                }
+            }
+
+        }
+    }
+}
+
+
 @Composable
-private fun checkboxAndText(state: SCCUIWindowState, checkedConfigState: Boolean, s: String) {
+private fun settingsCheckboxes(state: SCCUIWindowState) {
     Checkbox(
-        checked = checkedConfigState,
-        onCheckedChange = { checkedConfigState = it },
+        checked = state.checkedConfigState,
+        onCheckedChange = { state.checkedConfigState = it },
         //modifier = Modifier.padding(0.dp, 0.dp),
         colors = CheckboxDefaults.colors(
             checkedColor = state.backgroundColor,
             uncheckedColor = state.borderColor,
         )
     )
-    Text(text = s, color = state.textColor, fontFamily = state.oldFont, modifier = Modifier.padding(0.dp, 18.dp))
-}*/
+    Text(text = "Show Alternative Configs (not yet implemented)", color = state.textColor, fontFamily = state.oldFont, modifier = Modifier.padding(0.dp, 18.dp))
+
+    Checkbox(
+        checked = state.checkedLayerState,
+        onCheckedChange = { state.checkedLayerState = it },
+        colors = CheckboxDefaults.colors(
+            checkedColor = state.backgroundColor,
+            uncheckedColor = state.borderColor
+        )
+    )
+    Text(text = "Show Layers", color = state.textColor, fontFamily = state.oldFont, modifier = Modifier.padding(0.dp, 18.dp))
+
+    Checkbox(
+        checked = state.checkedMacroState,
+        onCheckedChange = { state.checkedMacroState = it },
+        //modifier = Modifier.border(2.dp, state.textColor, RectangleShape),
+        colors = CheckboxDefaults.colors(
+            checkedColor = state.backgroundColor,
+            uncheckedColor = state.borderColor
+        )
+    )
+    Text(text = "Show Macros", color = state.textColor, fontFamily = state.oldFont, modifier = Modifier.padding(0.dp, 18.dp))
+
+}
 
 @Composable
 private fun flashRadioButton(state: SCCUIWindowState) {
@@ -322,111 +302,7 @@ private fun macroList(state: SCCUIWindowState) {
                 .padding(0.dp, 0.dp),
             //.border(0.dp, Color.LightGray, RectangleShape),
             onClick = {
-                state.macroNameTemp = it.name
-                state.selectedMacro = it.index
-                state.triggerKeyTemp = it.trigger
-                if (state.mappingKeys.indexOfFirst { mappingskeys -> mappingskeys.name == it.trigger } != -1) {
-                    state.triggerKeyDescriptionTemp =
-                        state.mappingKeys[state.mappingKeys.indexOfFirst { mappingskeys -> mappingskeys.name == it.trigger }].description
-                } else { state.triggerKeyDescriptionTemp = "" }
-                // Meta Triggers
-                for (i in 0  .. 3) {
-                    var keyName = ""
-                    when (i) {
-                        0 -> { keyName = "CTRL" }
-                        1 -> { keyName = "SHIFT" }
-                        2 -> { keyName = "ALT" }
-                        3 -> { keyName = "GUI"}
-                    }
-                    val metaTriggersCurrentMeta = state.macros[state.selectedMacro].metaTriggers.filter { it.keyName == keyName }
-
-                    if (metaTriggersCurrentMeta.size == 1) {
-                        if (metaTriggersCurrentMeta[0].pressed) {
-                            when (metaTriggersCurrentMeta[0].leftRight) {
-                                "L" -> {
-                                    state.metaTriggersTemp[i] = "Left pressed"
-                                }
-                                "R" -> {
-                                    state.metaTriggersTemp[i] = "Right pressed"
-                                }
-                                else -> {
-                                    state.metaTriggersTemp[i] = "Any pressed"
-                                }
-                            }
-                        } else {
-                            when (metaTriggersCurrentMeta[0].leftRight) {
-                                "L" -> {
-                                    state.metaTriggersTemp[i] = "Left not pressed"
-                                }
-                                "R" -> {
-                                    state.metaTriggersTemp[i] = "Right not pressed"
-                                }
-                                else -> {
-                                    state.metaTriggersTemp[i] = "Any not pressed"
-                                }
-                            }
-                        }
-                    } else if (metaTriggersCurrentMeta.size == 2) {
-                        if (metaTriggersCurrentMeta[0].pressed && metaTriggersCurrentMeta[1].pressed) {
-                            state.metaTriggersTemp[i] = "Left and Right pressed"
-                        }
-                        else if (!metaTriggersCurrentMeta[0].pressed && !metaTriggersCurrentMeta[1].pressed) {
-                            state.metaTriggersTemp[i] = "Left and Right not pressed"
-                        }
-                        else {
-                            if ((metaTriggersCurrentMeta[0].pressed && metaTriggersCurrentMeta[0].leftRight == "R") || (metaTriggersCurrentMeta[1].pressed && metaTriggersCurrentMeta[1].leftRight == "R")) {
-                                state.metaTriggersTemp[i] = "Right Pressed and Left not pressed"
-                            } else {
-                                state.metaTriggersTemp[i] = "Left pressed, Right not pressed"
-                            }
-                        }
-                    } else {
-                        state.metaTriggersTemp[i] = ""
-                    }
-
-
-                }
-
-                //Actions
-                for (i in 0 until it.actions.size) {
-                    if (i < state.actionTemp.size) {
-                        state.actionTemp[i] = it.actions[i].action
-                    } else {
-                        state.actionTemp.add(it.actions[i].action)
-                        state.mExpandedAction.add(false)
-                        state.mTextFieldSizeAction.add(Size.Zero)
-                    }
-                    val actionIndex = state.actions.indexOfFirst { actions -> actions.action == it.actions[i].action }
-                    if (actionIndex != -1 && i < state.actionDescriptionTemp.size) {
-                        state.actionDescriptionTemp[i] = state.actions[actionIndex].description
-                    } else if (actionIndex != -1 && i >= state.actionDescriptionTemp.size) {
-                        state.actionDescriptionTemp.add(state.actions[actionIndex].description)
-                    } else if (actionIndex == -1 && i < state.actionDescriptionTemp.size) {
-                        state.actionDescriptionTemp[i] = ""
-                    } else {
-                        state.actionDescriptionTemp.add("")
-                    }
-                    if (i < state.actionKeyTemp.size) {
-                        state.actionKeyTemp[i] = it.actions[i].keyName
-                    } else {
-                        state.actionKeyTemp.add(it.actions[i].keyName)
-                        state.mExpandedActionKey.add(false)
-                        state.mTextFieldSizeActionKey.add(Size.Zero)
-                    }
-                    val actionKeyIndex = state.mappingKeys.indexOfFirst { mappingskeys -> mappingskeys.name == it.actions[i].keyName }
-                    if (actionKeyIndex != -1 && i < state.actionKeyDescriptionTemp.size) {
-                        state.actionKeyDescriptionTemp[i] =
-                            state.mappingKeys[actionKeyIndex].description
-                    } else if (actionKeyIndex != -1 && i >= state.actionKeyDescriptionTemp.size) {
-                        state.actionKeyDescriptionTemp.add(state.mappingKeys[actionKeyIndex].description)
-                    } else if (actionKeyIndex == -1 && i < state.actionKeyDescriptionTemp.size) {
-                        state.actionKeyDescriptionTemp[i] = ""
-                    } else { state.actionKeyDescriptionTemp.add("") }
-                }
-                // delete not needed temp variables - this is important because they get persisted otherwise!
-                if (state.actionTemp.size > it.actions.size) {
-                    state.actionTemp.removeRange(it.actions.size-1, state.actionTemp.size - 1)
-                }
+                state.macrolistClicked(it)
             },
             shape = RectangleShape,
             elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
@@ -487,18 +363,7 @@ private fun addActionButton(state: SCCUIWindowState) {
                 .background(state.activeButtonColor),
             //.border(0.dp, Color.LightGray, RectangleShape),
             onClick = {
-                val index = state.macros[state.selectedMacro].actions.size
-                state.macros[state.selectedMacro].actions.add(MacroAction("", "", index))
-                state.actionTemp.add("")
-                state.actionDescriptionTemp.add("")
-                state.actionKeyTemp.add("")
-                state.actionKeyDescriptionTemp.add("")
-                state.mExpandedAction.add(false)
-                state.mTextFieldSizeAction.add(Size.Zero)
-                state.mExpandedActionKey.add(false)
-                state.mTextFieldSizeActionKey.add(Size.Zero)
-                state.macroMode = false
-                state.macroMode = true
+                state.addActionButtonClicked()
             },
             shape = RectangleShape,
             colors = ButtonDefaults.buttonColors(state.activeButtonColor)
@@ -519,14 +384,8 @@ private fun layerButton (state: SCCUIWindowState, layer: Int) {
             .padding(0.dp, 0.dp),
             //.border(0.dp, Color.LightGray, RectangleShape),
         onClick = {
-            state.macroMode = false
             state.macroButtonColor = state.inactiveButtonColor
             state.macroButtonTextColor = state.inactiveButtonTextColor
-            if (layer == 0) {
-                state.statusText = "Click on a key to map it to another."
-            } else {
-                state.statusText = "Select 1, 2 or 3 keys to access the layer. And then click on a key to map it to another."
-            }
             for (i in 0..8) {
                 if (i != layer) {
                     state.layerButtonColor[i] = state.inactiveButtonColor
@@ -537,23 +396,7 @@ private fun layerButton (state: SCCUIWindowState, layer: Int) {
                 }
 
             }
-            state.layer = layer
-            for (i in 0..2) {
-                if (state.layerKey[layer][i] != 0) {
-                    state.layerKeyNameTemp[i] = state.fnKey[state.layerKey[layer][i]]
-                }
-                if (state.fnKey[state.layerKey[layer][i]] != "" && state.layerKey[layer][i] != 0 && state.mappingKeys.indexOfFirst { it.name == state.fnKey[state.layerKey[layer][i]] } != -1) {
-                    state.layerKeyDescriptionTemp[i] = state.mappingKeys[state.mappingKeys.indexOfFirst { it.name == state.fnKey[state.layerKey[layer][i]] }].description
-                } else { //this is only done to update the variable and therefore the UI
-                    state.layerKeyDescriptionTemp[i] = ""
-                    state.label = ""
-                    state.mapTo = ""
-                    state.mapToDescription = ""
-                }
-            }
-
-            state.updateRemapblockOutput(layer)
-            state.updateLayerblockOutput()
+            state.layerButtonClicked(layer)
         },
         shape = RectangleShape,
         elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
@@ -606,7 +449,7 @@ private fun keyboard(state: SCCUIWindowState) {
                 modifier = Modifier.absolutePadding(top = state.defaultHeight.times(t)) //.paddingFromBaseline(top = defaultHeight.times(t))
             ) {
 
-                it.forEach {
+                it.forEach { it ->
                     it.row = t
                     it.column = c
 
@@ -1241,9 +1084,8 @@ private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: In
         Box (modifier = Modifier.padding(0.dp, 10.dp)) {
             Button(
                 modifier = Modifier.padding(10.dp),
-                onClick = {
-
-                },
+                onClick = { //see below
+                    },
                 shape = RectangleShape,
                 elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
                 colors = ButtonDefaults.buttonColors(Color.Black)
@@ -1266,8 +1108,7 @@ private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: In
         Box {
             Button(
                 modifier = Modifier.padding(18.dp),
-                onClick = {
-
+                onClick = { //see below
                 },
                 shape = RectangleShape,
                 elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
@@ -1291,7 +1132,8 @@ private fun layerKeyDropDown(state: SCCUIWindowState, index: Int, layerKeyNo: In
         Box {
             Button(
                 modifier = Modifier.padding(30.dp),
-                onClick = {                },
+                onClick = {   //see below
+                },
                 shape = RectangleShape,
                 elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
                 colors = ButtonDefaults.buttonColors(Color.Black)
@@ -1323,7 +1165,8 @@ private fun readButton(state: SCCUIWindowState) {
     Box {
         Button(
             modifier = Modifier.padding(30.dp, 10.dp),
-            onClick = {                },
+            onClick = {   //see below
+            },
             shape = RectangleShape,
             elevation = ButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp, 0.dp),
             colors = ButtonDefaults.buttonColors(Color.Black)
