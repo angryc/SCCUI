@@ -367,9 +367,9 @@ class SCCUIWindowState(
                 layerKeyDescriptionTemp[i] = mappingKeys[mappingKeys.indexOfFirst { it.name == fnKey[layerKey[layerArgs][i]] }].description
             } else { //this is only done to update the variable and therefore the UI
                 layerKeyDescriptionTemp[i] = ""
-                label = ""
-                mapTo = ""
-                mapToDescription = ""
+                labelTemp = ""
+                mapToTemp = ""
+                mapToDescriptionTemp = ""
             }
         }
 
@@ -770,12 +770,12 @@ class SCCUIWindowState(
     var rows = mutableStateListOf(mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))))
 
     // temp variables
-    var label by mutableStateOf("")
-    var name by mutableStateOf("")
-    var mapTo by mutableStateOf("")
-    var mapToDescription by mutableStateOf("")
-    var row: Int by mutableStateOf(1)
-    var column: Int by mutableStateOf(1)
+    var labelTemp by mutableStateOf("")
+    var nameTemp by mutableStateOf("")
+    var mapToTemp by mutableStateOf("")
+    var mapToDescriptionTemp by mutableStateOf("")
+    var rowTemp: Int by mutableStateOf(1)
+    var columnTemp: Int by mutableStateOf(1)
 
     fun initKeyboard(index: Int) {
         rows = mutableStateListOf(mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))), mutableListOf(Key("","",0.0,1.0, Color.LightGray, mutableListOf(null, null, null, null, null, null, null, null, null))))
@@ -788,32 +788,30 @@ class SCCUIWindowState(
                 k++
             }
             r++
-
         }
         updateRemapblockOutput(0)
-
     }
 
     fun applyMapToButtonPressed() {
         //rows[row][column].label = label //maybe activate later, if changed labels are persisted in file
-        if (rows[row][column].mapTo[layer] != null) {
-            if (!rows[row][column].mapTo[layer]!!.startsWith("FN")) { //FN keys cannot be overwritten!
-                if (mapTo == "NOMAPPING") { //delete mapping
-                    rows[row][column].mapTo[layer] = null
-                    mapTo = ""
-                    mapToDescription = ""
+        if (rows[rowTemp][columnTemp].mapTo[layer] != null) {
+            if (!rows[rowTemp][columnTemp].mapTo[layer]!!.startsWith("FN")) { //FN keys cannot be overwritten!
+                if (mapToTemp == "NOMAPPING") { //delete mapping
+                    rows[rowTemp][columnTemp].mapTo[layer] = null
+                    mapToTemp = ""
+                    mapToDescriptionTemp = ""
                 } else {
-                    rows[row][column].mapTo[layer] = mapTo
+                    rows[rowTemp][columnTemp].mapTo[layer] = mapToTemp
                     statusText = "Mapping saved."
                 }
             } else {
                 statusText = "Function keys cannot be overwritten. Select relevant layer and deselect key there."
             }
         } else {
-            if (mapTo == "") {
+            if (mapToTemp == "") {
                 statusText = "Mapping NOT saved, because no key to map to was selected."
             } else {
-                rows[row][column].mapTo[layer] = mapTo
+                rows[rowTemp][columnTemp].mapTo[layer] = mapToTemp
                 statusText = "Mapping saved."
             }
         }

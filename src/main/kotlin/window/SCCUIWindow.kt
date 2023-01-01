@@ -10,7 +10,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -919,17 +918,17 @@ private fun keyboard(state: SCCUIWindowState) {
                         OutlinedButton(
                             onClick = {
                                 //set row and column number of each key
-                                state.row = it.row!!
-                                state.column = it.column!!
+                                state.rowTemp = it.row!!
+                                state.columnTemp = it.column!!
                                 //update name & label if it was changed in the UI
-                                state.name = it.name
-                                state.label = it.label //if (it.label != "  ") { it.label } else { it.name }
+                                state.nameTemp = it.name
+                                state.labelTemp = it.label //if (it.label != "  ") { it.label } else { it.name }
                                 if (it.mapTo[state.layer] != null) {
                                     //get already mapped keys and update description/label of keys
-                                    state.mapTo = it.mapTo[state.layer]!!
-                                    state.mapToDescription = state.mappingKeys[state.mappingKeys.indexOfFirst { it.name == state.rows[state.row][state.column].mapTo[state.layer] }].description
+                                    state.mapToTemp = it.mapTo[state.layer]!!
+                                    state.mapToDescriptionTemp = state.mappingKeys[state.mappingKeys.indexOfFirst { it.name == state.rows[state.rowTemp][state.columnTemp].mapTo[state.layer] }].description
                                 } else {
-                                    state.mapToDescription = ""
+                                    state.mapToDescriptionTemp = ""
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(backgroundColor = it.backgroundColor),
@@ -985,9 +984,9 @@ private fun selectedKey(state: SCCUIWindowState) {
     Box {
 
         OutlinedTextField(
-            value = if (state.label == "") { "" } else { state.label + " (" + state.name +")" },
+            value = if (state.labelTemp == "") { "" } else { state.labelTemp + " (" + state.nameTemp +")" },
             onValueChange = {
-                state.label = it
+                state.labelTemp = it
             },
             textStyle = TextStyle(fontFamily = state.oldFont, textAlign = TextAlign.Center, color = state.textColor),
             modifier = Modifier.padding(0.dp, 10.dp).border(2.dp, state.borderColor, RectangleShape),
@@ -1010,12 +1009,12 @@ private fun mapToDropDown(state: SCCUIWindowState){
             // Create an Outlined Text Field
             // with icon and not expanded
             OutlinedTextField(
-                value = state.mapToDescription,
+                value = state.mapToDescriptionTemp,
                 onValueChange = {
 
                     state.mappingKeysDropDown = state.mappingKeys
                     state.foundMappingKeys = mutableStateListOf(state.mappingKeys[0])
-                    state.mapToDescription = it
+                    state.mapToDescriptionTemp = it
                     state.mappingKeysDropDown.forEach() { mappingKey ->
                         if (mappingKey.description.contains(it, ignoreCase = true) && mappingKey.name != "NOMAPPING") {
                             //println(mappingKey.description)
@@ -1059,8 +1058,8 @@ private fun mapToDropDown(state: SCCUIWindowState){
             ) {
                 state.mappingKeysDropDown.forEach {
                     DropdownMenuItem(onClick = {
-                        state.mapToDescription = it.description
-                        state.mapTo = it.name
+                        state.mapToDescriptionTemp = it.description
+                        state.mapToTemp = it.name
                         state.mExpanded[no] = false
                     }
                     ) {
